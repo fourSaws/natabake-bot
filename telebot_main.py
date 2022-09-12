@@ -1,6 +1,9 @@
+import telebot.apihelper
 from telebot import TeleBot, types, formatting
+
 import secure
 import api
+import models
 import logging
 from inspect import currentframe
 import tools
@@ -38,7 +41,7 @@ def menu(msg: types.Message, edit=False):
     logging.info(f'{msg.chat.id} got into {currentframe().f_code.co_name} function')
     cart = api.get_cart(msg.chat.id)
     structure = []
-    structure.append([types.InlineKeyboardButton('КАТАЛОГ', callback_data='попа')])
+    structure.append([types.InlineKeyboardButton('КАТАЛОГ', callback_data='Выберите как показать каталог')])
     structure.append([types.InlineKeyboardButton("По категориям", callback_data='menu_by_cat&1'),
                       types.InlineKeyboardButton("По брендам", callback_data='menu_by_brand&1')])
     structure.append([types.InlineKeyboardButton(f"Корзина ({len(cart)}) {sum(tuple(item.sum for item in cart))}₽",
@@ -52,7 +55,7 @@ def menu(msg: types.Message, edit=False):
 
 @bot.callback_query_handler(func=lambda data: data.data.split('&')[0] == 'back')
 def back(data: types.CallbackQuery):
-    logging.info(f'{data.message.chat.id} got into {currentframe().f_code.co_name} function')
+    logging.info(f'{data.message.chat.id} got into {currentframe().f_code.co_name} function with {data.data}')
     match data.data.split('&')[1]:
         case 'menu':
             menu(data.message, True)
@@ -117,13 +120,18 @@ def products_by_category(data: types.CallbackQuery):
         types.InlineKeyboardButton(product.name, callback_data=f'product&{product.id};{data.data}') for product in
         products)
     keyboard = tools.get_inline_keyboard_page(keyboard_buttons, int(data.data.split('&')[1]), 2,
-                                              ''.join(data.data.split('&')[:2]), back_to=data.data)
+                                              ''.join(data.data.split('&')[:2]), back_to='menu_by_cat&1')
     bot.answer_callback_query(data.id, 'Товары')
-    bot.edit_message_text('Выберите товар', data.message.chat.id, data.message.message_id, reply_markup=keyboard)
+    try:
+        bot.edit_message_text('Выберите товар', data.message.chat.id, data.message.message_id, reply_markup=keyboard)
+    except telebot.apihelper.ApiTelegramException:
+        bot.delete_message(data.message.chat.id,data.message.message_id)
+        bot.send_message(data.message.chat.id,'Выберите товар', reply_markup=keyboard)
 
 
 @bot.callback_query_handler(func=lambda data: data.data.startswith('product'))
 def product_card(data: types.CallbackQuery):
+    logging.info(f'{data.message.chat.id} got into {currentframe().f_code.co_name} function')
     direct_data, from_data = data.data.split(';')
     try:
         product = api.get_products(id=int(direct_data.split('&')[1]))[0]
@@ -131,23 +139,27 @@ def product_card(data: types.CallbackQuery):
         bot.edit_message_text("Товар не найден", data.message.chat.id, data.message.message_id,
                               reply_markup=quick_markup({'Назад': {'callback_query': from_data}}))
         return
-    text = formatting.format_text(
-        formatting.mbold('Производитель: '), product.get_brand_name(), '\n',
-        formatting.mbold('Наименование: '), product.name, '\n',
-        formatting.mbold('Размер: '), product.volume, '\n',
-        formatting.mbold("Цена: "), f'{product.price} ₽',
-        separator='',
-    )
+    text = '*Производитель:* '
+    text += product.get_brand_name() + '\n'
+    text += '*Наименование:* ' + product.name + '\n'
+    text += (('*Размер:* ' + product.volume) if product.volume else '') + '\n'
+    text += "*Цена:* " + f'{product.price} ₽'
     other = api.get_products(name=product.name)
-    keyboard = types.InlineKeyboardMarkup()
+    keyboard = []
     if len(other) > 1:
         other.remove(product)
-        for prod in other:
-            keyboard.add(types.InlineKeyboardButton(prod.volume, callback_data=f'product&{prod.id};{from_data}'))
-    keyboard.add('')  # TODO клавиатура, фото
+    for prod in other:
+        if prod != product:
+            logging.info(f'found different {prod=} {product=}')
+            keyboard.append([types.InlineKeyboardButton(prod.volume, callback_data=f'product&{prod.id};{from_data}')])
+    keyboard.append(cart_buttons_for_product(product, data.message))
+    keyboard.append([types.InlineKeyboardButton('Назад', callback_data=from_data)])
+    photo = product.get_photo()
+    bot.delete_message(data.message.chat.id,data.message.message_id)
+    bot.send_photo(data.message.chat.id,photo,text, 'Markdown',
+                          reply_markup=types.InlineKeyboardMarkup(keyboard))
 
 
-@bot.message_handler(commands=['cart'])
 def get_cart(msg: types.Message):
     logging.info(f'{msg.chat.id} got into {currentframe().f_code.co_name} function')
 
@@ -173,7 +185,27 @@ def refresh_cart(data: types.CallbackQuery):
 @bot.callback_query_handler(lambda x: True)
 def default_answer(data: types.CallbackQuery):
     logging.info(f'default callback query answer to {data.data}')
-    bot.answer_callback_query(data.id)
+    bot.answer_callback_query(data.id, data.data)
+
+
+def cart_buttons_for_product(product: models.Product, msg: types.Message) -> list[types.InlineKeyboardButton]:
+    cart = api.get_cart(msg.chat.id)
+    in_cart = False
+    buttons = []
+    for prod_in_cart in cart:
+        if prod_in_cart == product:
+            in_cart = True
+            if prod_in_cart.quantity > 1:
+                buttons.append(types.InlineKeyboardButton('-',
+                                                          callback_data=f'edit&{prod_in_cart.cart_id}&{prod_in_cart.quantity - 1}'))
+            buttons.append(types.InlineKeyboardButton(str(prod_in_cart.quantity),
+                                                      callback_data=f'В корзине {prod_in_cart.quantity}шт'))
+            buttons.append(types.InlineKeyboardButton('+',
+                                                      callback_data=f'edit&{prod_in_cart.cart_id}&{prod_in_cart.quantity + 1}'))
+            break
+    if not in_cart:
+        buttons = [types.InlineKeyboardButton('В корзину', callback_data=f'add_to_cart&{product.id}')]
+    return buttons
 
 
 if __name__ == '__main__':
