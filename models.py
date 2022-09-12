@@ -1,5 +1,6 @@
+import typing
 from dataclasses import dataclass
-
+from io import BytesIO
 import api
 
 
@@ -20,22 +21,25 @@ class Product:
 
     def get_brand_name(self) -> str:
         for brand in api.get_brands():
-            if self.id == brand.id:
+            if self.brand == brand.id:
                 return brand.name
+
+    def get_photo(self) -> typing.BinaryIO:
+        if self.photo_url:
+            photo = api.get_photo(self.photo_url)
+        else:
+            photo = open('no_image.jpg', 'rb')
+        return photo
 
 
 @dataclass()
-class CartItem:
-    id: int
-    volume: int
-    catalogue_id: int
-    name: str
+class CartItem():
+    catalogue_item:Product
     quantity: int
-    price: int
     sum: int
+    cart_id:int
 
-    def get_catalogue_item(self) -> Product:
-        return api.get_products(id=self.catalogue_id)[0]
+
 
 
 @dataclass()

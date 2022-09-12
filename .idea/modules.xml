@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/bot.iml" filepath="$PROJECT_DIR$/.idea/bot.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../natabake-server/.idea/natabake-server.iml" filepath="$PROJECT_DIR$/../natabake-server/.idea/natabake-server.iml" />
     </modules>
   </component>
 </project>
