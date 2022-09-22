@@ -197,7 +197,7 @@ def products_by_category(data: types.CallbackQuery):
             data.message.message_id,
             reply_markup=keyboard,
         )
-    except telebot.apihelper.ApiTelegramException:
+    except apihelper.ApiTelegramException:
         bot.delete_message(data.message.chat.id, data.message.message_id)
         bot.send_message(data.message.chat.id, "Выберите товар", reply_markup=keyboard)
 
@@ -242,7 +242,7 @@ def product_card(data: types.CallbackQuery):
     photo = product.get_photo()
     try:
         bot.delete_message(data.message.chat.id, data.message.message_id)
-    except telebot.apihelper.ApiTelegramException:
+    except apihelper.ApiTelegramException:
         pass
     bot.send_photo(
         data.message.chat.id,
