@@ -1,4 +1,3 @@
-import logging
 from typing import BinaryIO
 from urllib.request import urlopen
 
@@ -9,83 +8,49 @@ from models import CartItem, Brand, Category, Product
 
 
 def get_cart(chat_id) -> list[CartItem]:
-    response = requests.get(
-        "http://127.0.0.1:8000/api/getCart", params={"chat_id": chat_id}
-    )
+    response = requests.get('http://127.0.0.1:8000/api/getCart', params={'chat_id': chat_id})
     if response.status_code == 404:
         return []
     cart = []
     for i in response.json():
-        cart.append(
-            CartItem(
-                cart_id=int(i["id"]),
-                sum=int(i["sum"]),
-                quantity=int(i["quantity"]),
-                catalogue_item=get_products(id=i["product_id"])[0],
-            )
-        )
-
-
-def add_to_cart(chat_id: int, product: Product) -> bool:
-    response = requests.get(
-        "http://127.0.0.1:8000/api/addToCart",
-        params={"chat_id": chat_id, "id": product.id},
-    )
-    if response.status_code != 200:
-        logging.error(
-            f"Add to cart method got unexpected result: {response.text}. ARGS:{chat_id,product.id}"
-        )
-        return False
-    return True
+        cart.append(CartItem(cart_id=int(i['id']),
+                             sum=int(i['sum']),
+                             quantity=int(i['quantity']),
+                             catalogue_item=get_products(id=i['product_id'])[0]))
 
 
 def get_brands() -> list[Brand]:
-    response = requests.get("http://127.0.0.1:8000/api/getBrands")
-    return sorted(
-        [Brand(brand["id"], brand["name"]) for brand in response.json()],
-        key=lambda brand: brand.name,
-    )
+    response = requests.get('http://127.0.0.1:8000/api/getBrands')
+    return sorted([Brand(brand['id'], brand['name']) for brand in response.json()], key=lambda
+        brand: brand.name)
 
 
 def get_categories() -> list[Category]:
-    response = requests.get("http://127.0.0.1:8000/api/getCategory")
-    return sorted(
-        [Category(category["id"], category["name"]) for category in response.json()],
-        key=lambda category: category.name,
-    )
+    response = requests.get('http://127.0.0.1:8000/api/getCategory')
+    return sorted([Category(category['id'], category['name']) for category in response.json()],
+                  key=lambda category: category.name)
 
 
-def get_products(
-    id: int = None, name: str = None, category_id: int = None, brand_id: int = None
-) -> list[Product]:
+def get_products(id: int = None, name: str = None, category_id: int = None, brand_id: int = None) -> list[Product]:
     payload = {}
     if id:
-        payload["id"] = id
+        payload['id'] = id
     if name:
-        payload["name"] = name
+        payload['name'] = name
     if category_id:
-        payload["category"] = category_id
+        payload['category'] = category_id
     if brand_id:
-        payload["brand"] = brand_id
-    response = requests.get("http://127.0.0.1:8000/api/getProducts", params=payload)
+        payload['brand'] = brand_id
+    response = requests.get('http://127.0.0.1:8000/api/getProducts', params=payload)
     if not response.json():
         raise FileNotFoundError(f"No file objects found for given params {payload=}")
     else:
         response = response.json()
-    products = [
-        Product(
-            product["id"],
-            product["volume"],
-            product["category_id"],
-            product["name"],
-            product["price"],
-            product.get("photo_url"),
-            product.get("brand") or product.get("brand_id"),
-        )
-        for product in response
-    ]
+    products = [Product(product['id'], product['volume'], product['category_id'], product['name'], product['price'],
+                        product.get('photo_url'), product.get('brand') or product.get('brand_id')) for product in
+                response]
     return products
 
 
 def get_photo(url: str) -> BinaryIO:
-    return urlopen("http://127.0.0.1:8000/media/" + url).read()
+    return urlopen('http://127.0.0.1:8000/media/'+url).read()
