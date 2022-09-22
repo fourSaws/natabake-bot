@@ -1,8 +1,4 @@
-from typing import List
-
-import telebot.apihelper
-from telebot import TeleBot, types, formatting
-from telebot.types import InlineKeyboardButton
+from telebot import TeleBot, types, apihelper
 
 import secure
 import api
