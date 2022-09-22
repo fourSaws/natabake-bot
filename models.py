@@ -28,18 +28,16 @@ class Product:
         if self.photo_url:
             photo = api.get_photo(self.photo_url)
         else:
-            photo = open('no_image.jpg', 'rb')
+            photo = open("no_image.jpg", "rb")
         return photo
 
 
 @dataclass()
-class CartItem():
-    catalogue_item:Product
+class CartItem:
+    catalogue_item: Product
     quantity: int
     sum: int
-    cart_id:int
-
-
+    cart_id: int
 
 
 @dataclass()
