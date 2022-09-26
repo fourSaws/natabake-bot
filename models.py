@@ -1,5 +1,5 @@
 import typing
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from io import BytesIO
 import api
 
@@ -13,6 +13,10 @@ class Product:
     price: int
     photo_url: str
     brand: int
+
+    def __post_init__(self):
+        if self.photo_url is None:
+            self.photo_url = ""
 
     def get_category_name(self) -> str:
         for category in api.get_categories():
@@ -28,18 +32,19 @@ class Product:
         if self.photo_url:
             photo = api.get_photo(self.photo_url)
         else:
-            photo = open('no_image.jpg', 'rb')
+            photo = open("no_image.jpg", "rb")
         return photo
 
 
 @dataclass()
-class CartItem():
-    catalogue_item:Product
+class CartItem:
+    catalogue_item: Product
     quantity: int
-    sum: int
-    cart_id:int
+    sum: int = field(init=False)
+    cart_id: int
 
-
+    def __post_init__(self):
+        self.sum = self.quantity * self.catalogue_item.price
 
 
 @dataclass()
