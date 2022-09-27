@@ -12,7 +12,7 @@ def get_cart(chat_id) -> list[CartItem]:
         "http://127.0.0.1:8000/api/getCart", params={"chat_id": chat_id}
     )
     if response.status_code == 404:
-        return []
+        raise FileNotFoundError("Cart is empty")
     cart = []
     for i in response.json():
         cart.append(
