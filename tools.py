@@ -17,9 +17,9 @@ def get_inline_keyboard_page(
             "Telegram API doesn't support more than 10 rows (one needed for pagination buttons)"
         )
     starts_from = (page - 1) * columns * rows
-    if starts_from > len(items):
-        starts_from = 0
-        page = 1
+    while starts_from >= len(items):
+        page -= 1
+        starts_from = (page - 1) * columns * rows
     ends_on = starts_from + columns * rows
     keyboard = []
     for i in range(starts_from, min(len(items), ends_on), columns):
