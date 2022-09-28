@@ -1,7 +1,6 @@
 import logging
 import typing
 from dataclasses import dataclass, field
-from io import BytesIO
 import api
 
 
