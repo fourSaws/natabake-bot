@@ -3,7 +3,11 @@ import math
 from typing import Sequence
 import models
 import api
+import telebot
 from telebot import types
+
+import secure
+from telebot_main import BANNED_CHARS
 
 
 def get_inline_keyboard_page(
@@ -95,3 +99,22 @@ def keyboard_for_product(chat_id: int, product: models.Product, from_data: str):
     keyboard.append(cart_buttons_for_product(product, chat_id, from_data))
     keyboard.append([types.InlineKeyboardButton("Назад", callback_data=from_data)])
     return types.InlineKeyboardMarkup(keyboard)
+
+
+def order_paid(order_id: int):
+    order = api.get_order(order_id)
+    if order.status not in (models.Status.CASH, models.Status.PAID):
+        raise ValueError("Order isn't paid")
+    for char in BANNED_CHARS:
+        order.address = order.address.replace(char, "\\" + char)
+    order.address = order.address.replace("\n", "\n\t\t")
+    notification_text = f"""
+*Новый заказ*
+{order.cart}
+Адрес:
+\t\t{order.address}
+    
+Заказ оплачен *__{"Картой" if order.status == models.Status.PAID else "Наличными"}__*
+    """
+    bot = telebot.TeleBot(token=secure.notification_token)
+    bot.send_message(secure.notification_chat, notification_text, parse_mode="MarkdownV2")

@@ -1,7 +1,15 @@
 import logging
 import typing
 from dataclasses import dataclass, field
+from enum import Enum
 import api
+
+
+class Status(Enum):
+    IN_CART = 0
+    CASH = 1
+    WAITING_FOR_PAYMENT = 2
+    PAID = 3
 
 
 @dataclass()
@@ -94,3 +102,15 @@ class User:
         if not number[1:].isdigit() or len(number) != 12:
             raise ValueError("Неправильный формат номера")
         return number
+
+
+@dataclass()
+class Order:
+    client: int  # foreign key to User (chat_id)
+    cart: str
+    sum: float
+    address: str
+    status: Status
+    comment: str
+    id: int = None
+    free_delivery: bool = True

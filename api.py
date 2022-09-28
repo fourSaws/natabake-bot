@@ -1,12 +1,13 @@
 import logging
 from typing import BinaryIO
 from urllib.request import urlopen
-
+from random import randint
 import requests
 
-from models import CartItem, Brand, Category, Product, User
+from models import *
 
 users = {}
+orders = {}
 
 
 def get_cart(chat_id) -> list[CartItem]:
@@ -128,3 +129,29 @@ def create_user(user: User) -> User:
 def get_user(chat_id: int) -> User:
     global users
     return users.get(chat_id)
+
+
+def create_order(order: Order) -> Order:
+    global orders
+    while (id_ := randint(0, 100)) in orders:
+        pass
+    order.id = id_
+    orders[order.id] = order
+    return orders[order.id]
+
+
+def change_status(order_id: int, status: Status) -> Order:
+    global orders
+    order = orders[order_id]
+    order.status = status
+    orders[order_id] = order
+    return orders[order_id]
+
+
+def get_order(order_id: int) -> Order:
+    global orders
+    return orders[order_id]
+
+
+def get_orders(chat_id: int) -> list[Order]:
+    raise NotImplementedError

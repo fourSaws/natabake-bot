@@ -463,17 +463,20 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
             1,
         )
     else:
-        sum_ = 0
+        order = models.Order(message.chat.id, "", 0, user.address, models.Status.IN_CART, user.comment)
         for index, item in enumerate(cart_list):
             for char in BANNED_CHARS:
                 item.catalogue_item.name = item.catalogue_item.name.replace(char, "\\" + char)
                 item.catalogue_item.volume = item.catalogue_item.volume.replace(char, "\\" + char)
-            message_text += f"{index + 1}\\) _{item.catalogue_item.name}_ {'__' + item.catalogue_item.volume + '__' if item.catalogue_item.volume != 'Безразмерный' else ''} {item.quantity}шт⋅{item.catalogue_item.price}₽ \\= *{item.sum}₽*\n "
-            sum_ += item.sum
-        if sum_ < FREE_DELIVERY_FROM:
-            sum_ += DELIVERY_COST
+            order.cart += f"{index + 1}\\) _{item.catalogue_item.name}_ {'__' + item.catalogue_item.volume + '__' if item.catalogue_item.volume != 'Безразмерный' else ''} {item.quantity}шт⋅{item.catalogue_item.price}₽ \\= *{item.sum}₽*\n "
+            order.sum += item.sum
+        message_text += order.cart
+        if order.sum < FREE_DELIVERY_FROM:
+            order.sum += DELIVERY_COST
+            order.free_delivery = False
             message_text += f"\nДоставка: {DELIVERY_COST}₽"
-        message_text += f"\n*Итого: {sum_}₽*"
+        message_text += f"\n*Итого: {order.sum}₽*"
+        order = api.create_order(order)
         for char in BANNED_CHARS:
             user.address.replace(char, "\\" + char)
             user.comment.replace(char, "\\" + char)
@@ -487,8 +490,8 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                 [types.InlineKeyboardButton("Изменить номер телефона", callback_data="contacts&phone")],
                 [types.InlineKeyboardButton("Изменить адрес", callback_data="contacts&address")],
                 [types.InlineKeyboardButton("Изменить комментарий", callback_data="contacts&comment")],
-                [types.InlineKeyboardButton("Оплатить картой", callback_data="pay&card")],
-                [types.InlineKeyboardButton("Оплатить наличными", callback_data="pay&cash")],
+                [types.InlineKeyboardButton("Оплатить картой", callback_data=f"pay&{order.id}&card")],
+                [types.InlineKeyboardButton("Оплатить наличными", callback_data=f"pay&{order.id}&cash")],
                 [types.InlineKeyboardButton("Назад", callback_data="back&cart")],
             ]
         )
@@ -664,6 +667,22 @@ def comment_enter(msg: types.Message, on_complete: typing.Callable[[types.Messag
     print(user)
     assert api.create_user(user) == user
     on_complete(msg)
+
+
+# --------------------------------------------------------------------------------------
+
+
+@bot.callback_query_handler(lambda data: data.data.split("&")[0] == "pay")
+def pay(data: types.CallbackQuery):
+    logging.info(f"{data.message.chat.id} came with {data.data}")
+    order_id = int(data.data.split("&")[1])
+    method = data.data.split("&")[2]
+    order = api.get_order(order_id)
+    if method == "cash":
+        order.status = models.Status.CASH
+        tools.order_paid(order.id)
+        bot.answer_callback_query(data.id, "Заказ отправлен")
+        bot.edit_message_text("Спасибо за заказ", data.message.chat.id, data.message.message_id)
 
 
 @bot.callback_query_handler(lambda x: True)
