@@ -1,16 +1,16 @@
-import logging
 from typing import BinaryIO
 from urllib.request import urlopen
-
+from random import randint
 import requests
 
-from models import CartItem, Brand, Category, Product
+from models import *
+
+users = {}
+orders = {}
 
 
 def get_cart(chat_id) -> list[CartItem]:
-    response = requests.get(
-        "http://127.0.0.1:8000/api/getCart", params={"chat_id": chat_id}
-    )
+    response = requests.get("http://127.0.0.1:8000/api/getCart", params={"chat_id": chat_id})
     if response.status_code == 404:
         raise FileNotFoundError("Cart is empty")
     cart = []
@@ -46,9 +46,7 @@ def get_categories() -> list[Category]:
     )
 
 
-def get_products(
-    id: int = None, name: str = None, category_id: int = None, brand_id: int = None
-) -> list[Product]:
+def get_products(id: int = None, name: str = None, category_id: int = None, brand_id: int = None) -> list[Product]:
     payload = {}
     if id:
         payload["id"] = id
@@ -119,3 +117,40 @@ def edit_cart(cart_id: int, chat_id: int, quantity: int) -> CartItem:
         response.json()["quantity"],
         cart_id,
     )
+
+
+def create_user(user: User) -> User:
+    global users
+    users[user.chat_id] = user
+    return users[user.chat_id]
+
+
+def get_user(chat_id: int) -> User:
+    global users
+    return users.get(chat_id)
+
+
+def create_order(order: Order) -> Order:
+    global orders
+    while (id_ := randint(0, 100)) in orders:
+        pass
+    order.id = id_
+    orders[order.id] = order
+    return orders[order.id]
+
+
+def change_status(order_id: int, status: Status) -> Order:
+    global orders
+    order = orders[order_id]
+    order.status = status
+    orders[order_id] = order
+    return orders[order_id]
+
+
+def get_order(order_id: int) -> Order:
+    global orders
+    return orders[order_id]
+
+
+def get_orders(chat_id: int) -> list[Order]:
+    raise NotImplementedError
