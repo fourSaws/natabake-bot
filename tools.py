@@ -13,9 +13,7 @@ def get_inline_keyboard_page(
     back_to="menu",
 ):
     if rows > 9:
-        raise ValueError(
-            "Telegram API doesn't support more than 10 rows (one needed for pagination buttons)"
-        )
+        raise ValueError("Telegram API doesn't support more than 10 rows (one needed for pagination buttons)")
     starts_from = (page - 1) * columns * rows
     while starts_from >= len(items):
         page -= 1
@@ -26,11 +24,7 @@ def get_inline_keyboard_page(
         keyboard.append(items[i : i + columns])
     btns = []
     if page > 1:
-        btns.append(
-            types.InlineKeyboardButton(
-                "<=", callback_data=pagination_callback + str(page - 1)
-            )
-        )
+        btns.append(types.InlineKeyboardButton("<=", callback_data=pagination_callback + str(page - 1)))
     if len(items) > columns * rows:
         btns.append(
             types.InlineKeyboardButton(
@@ -39,14 +33,8 @@ def get_inline_keyboard_page(
             )
         )
     else:
-        btns.append(
-            types.InlineKeyboardButton("Назад", callback_data=f"back&{back_to}")
-        )
+        btns.append(types.InlineKeyboardButton("Назад", callback_data=f"back&{back_to}"))
     if ends_on < len(items):
-        btns.append(
-            types.InlineKeyboardButton(
-                "=>", callback_data=pagination_callback + str(page + 1)
-            )
-        )
+        btns.append(types.InlineKeyboardButton("=>", callback_data=pagination_callback + str(page + 1)))
     keyboard.append(btns)
     return types.InlineKeyboardMarkup(keyboard)
