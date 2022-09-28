@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import api
 
-
+logger=logging.getLogger(__name__)
 class Status(Enum):
     IN_CART = 0
     CASH = 1
@@ -75,7 +75,7 @@ class User:
     comment: str
 
     def __setattr__(self, name, value):
-        logging.info(f"{name=} {value=}")
+        logger.info(f"{name=} {value=}")
         if name == "phone_number":
             super().__setattr__(name, self.__validate_phone(value))
         else:

@@ -1,4 +1,3 @@
-import logging
 from typing import BinaryIO
 from urllib.request import urlopen
 from random import randint
