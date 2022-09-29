@@ -768,9 +768,7 @@ def comment_enter(
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
-    print(msg.text)
     user.comment = msg.text
-    print(user)
     assert api.create_user(user) == user
     on_complete(msg)
 

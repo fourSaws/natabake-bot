@@ -90,7 +90,6 @@ class User:
                 raise ValueError("Поддерживаются только номера из России")
 
         elif not number.isdigit():
-            print(f"{number=}")
             raise ValueError("Неправильный формат номера")
         else:
             if number[0] == "8":
