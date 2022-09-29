@@ -141,7 +141,7 @@ def order_paid(order_id: int):
     notification_text = f"""
 *Новый заказ*
 {order.cart}
-Телефон: {user.phone_number}
+Телефон: \\{user.phone_number}
 Адрес:
 \t\t{order.address}
 
