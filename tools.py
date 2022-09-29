@@ -136,6 +136,7 @@ def order_paid(order_id: int):
         raise ValueError("Order isn't paid")
     for char in BANNED_CHARS:
         order.address = order.address.replace(char, "\\" + char)
+        order.cart=order.cart.replace(char, "\\" + char)
     order.address = order.address.replace("\n", "\n\t\t")
     notification_text = f"""
 *Новый заказ*
