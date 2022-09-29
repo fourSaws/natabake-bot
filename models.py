@@ -4,9 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import api
 
-logger = logging.getLogger(__name__)
-
-
+logger=logging.getLogger(__name__)
 class Status(Enum):
     IN_CART = 0
     CASH = 1

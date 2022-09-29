@@ -6,7 +6,7 @@ import api
 import telebot
 from telebot import types
 
-from os import environ
+import secure
 from telebot_main import BANNED_CHARS
 
 
@@ -19,9 +19,7 @@ def get_inline_keyboard_page(
     back_to="menu",
 ):
     if rows > 9:
-        raise ValueError(
-            "Telegram API doesn't support more than 10 rows (one needed for pagination buttons)"
-        )
+        raise ValueError("Telegram API doesn't support more than 10 rows (one needed for pagination buttons)")
     starts_from = (page - 1) * columns * rows
     while starts_from >= len(items):
         page -= 1
@@ -32,11 +30,7 @@ def get_inline_keyboard_page(
         keyboard.append(items[i : i + columns])
     btns = []
     if page > 1:
-        btns.append(
-            types.InlineKeyboardButton(
-                "<=", callback_data=pagination_callback + str(page - 1)
-            )
-        )
+        btns.append(types.InlineKeyboardButton("<=", callback_data=pagination_callback + str(page - 1)))
     if len(items) > columns * rows:
         btns.append(
             types.InlineKeyboardButton(
@@ -45,30 +39,18 @@ def get_inline_keyboard_page(
             )
         )
     else:
-        btns.append(
-            types.InlineKeyboardButton("Назад", callback_data=f"back&{back_to}")
-        )
+        btns.append(types.InlineKeyboardButton("Назад", callback_data=f"back&{back_to}"))
     if ends_on < len(items):
-        btns.append(
-            types.InlineKeyboardButton(
-                "=>", callback_data=pagination_callback + str(page + 1)
-            )
-        )
+        btns.append(types.InlineKeyboardButton("=>", callback_data=pagination_callback + str(page + 1)))
     keyboard.append(btns)
     return types.InlineKeyboardMarkup(keyboard)
 
 
-def cart_buttons_for_product(
-    product: models.Product, chat_id: int, from_data: str
-) -> list[types.InlineKeyboardButton]:
+def cart_buttons_for_product(product: models.Product, chat_id: int, from_data: str) -> list[types.InlineKeyboardButton]:
     try:
         cart = api.get_cart(chat_id)
     except FileNotFoundError:
-        return [
-            types.InlineKeyboardButton(
-                "В корзину", callback_data=f"add_to_cart&{product.id};{from_data}"
-            )
-        ]
+        return [types.InlineKeyboardButton("В корзину", callback_data=f"add_to_cart&{product.id};{from_data}")]
     in_cart = False
     buttons = []
     for prod_in_cart in cart:
@@ -94,11 +76,7 @@ def cart_buttons_for_product(
             )
             break
     if not in_cart:
-        buttons = [
-            types.InlineKeyboardButton(
-                "В корзину", callback_data=f"add_to_cart&{product.id};{from_data}"
-            )
-        ]
+        buttons = [types.InlineKeyboardButton("В корзину", callback_data=f"add_to_cart&{product.id};{from_data}")]
     return buttons
 
 
@@ -108,19 +86,13 @@ def keyboard_for_product(chat_id: int, product: models.Product, from_data: str):
     if len(other) > 1:
         other.remove(product)
     for prod in other:
-        if (
-            prod != product
-            and prod.brand == product.brand
-            and prod.category == product.category
-        ):
+        if prod != product and prod.brand == product.brand and prod.category == product.category:
             logging.info(f"found different {prod=} {product=}")
             keyboard.append(
                 [
                     types.InlineKeyboardButton(
                         "Ещё есть на " + prod.volume,
-                        callback_data=f"product&{prod.id}" + f";{from_data}"
-                        if from_data is not None
-                        else "",
+                        callback_data=f"product&{prod.id}" + f";{from_data}" if from_data is not None else "",
                     )
                 ]
             )
@@ -131,7 +103,6 @@ def keyboard_for_product(chat_id: int, product: models.Product, from_data: str):
 
 def order_paid(order_id: int):
     order = api.get_order(order_id)
-    user = api.get_user(order.client)
     if order.status not in (models.Status.CASH, models.Status.PAID):
         raise ValueError("Order isn't paid")
     for char in BANNED_CHARS:
@@ -140,14 +111,10 @@ def order_paid(order_id: int):
     notification_text = f"""
 *Новый заказ*
 {order.cart}
-Телефон: {user.phone_number}
 Адрес:
 \t\t{order.address}
-
+    
 Заказ оплачен *__{"Картой" if order.status == models.Status.PAID else "Наличными"}__*
     """
-    bot = telebot.TeleBot(token=environ.get('notification_token'))
-    bot.send_message(
-        environ.get('notification_chat'), notification_text, parse_mode="MarkdownV2"
-    )
-    api.clear_cart(order.client)
+    bot = telebot.TeleBot(token=secure.notification_token)
+    bot.send_message(secure.notification_chat, notification_text, parse_mode="MarkdownV2")
