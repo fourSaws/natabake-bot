@@ -148,7 +148,10 @@ def order_paid(order_id: int):
 Заказ оплачен *__{"Картой" if order.status == models.Status.PAID else "Наличными"}__*
     """
     bot = telebot.TeleBot(token=environ.get('notification_token'))
-    bot.send_message(
-        environ.get('notification_chat'), notification_text, parse_mode="MarkdownV2"
-    )
+    try:
+        bot.send_message(
+            environ.get('notification_chat'), notification_text, parse_mode="MarkdownV2"
+        )
+    except telebot.apihelper.ApiTelegramException:
+        bot.send_message(environ.get('notification_chat'), notification_text)
     api.clear_cart(order.client)
