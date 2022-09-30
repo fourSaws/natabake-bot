@@ -8,6 +8,7 @@ import api
 import models
 import secure
 import tools
+from keys import *
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,10 +43,10 @@ def start(msg: types.Message):
     logging.info(f"{msg.chat.id} came")
 
     keyboard = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
-    keyboard.add(types.KeyboardButton("Мне уже есть 18"))
+    keyboard.add(types.KeyboardButton(START_BUTTON))
     bot.send_message(
         msg.chat.id,
-        "Привет, давай знакомиться! Для начала подтверди, что тебе уже есть 18",
+        START_MESSAGE,
         reply_markup=keyboard,
     )
     bot.register_next_step_handler(msg, prove_18)
@@ -54,15 +55,15 @@ def start(msg: types.Message):
 def prove_18(msg: types.Message):
     logging.info(f"{msg.chat.id} came")
 
-    if msg.text == "Мне уже есть 18":
+    if msg.text == START_BUTTON:
         bot.send_message(
             msg.chat.id,
-            "Круто, погнали выбирать",
+            START_ANSWER_SUCCESS,
             reply_markup=types.ReplyKeyboardRemove(),
         )
         menu(msg)
     else:
-        bot.send_message(msg.chat.id, "Жаль, тогда приходи попозже")
+        bot.send_message(msg.chat.id, START_ANSWER_FAIL)
         bot.register_next_step_handler(msg, start)
 
 
@@ -79,8 +80,12 @@ def menu(msg: types.Message, edit=False):
     structure = []
     structure.append(
         [
-            types.InlineKeyboardButton("По категориям", callback_data="menu_by_cat&1"),
-            types.InlineKeyboardButton("По брендам", callback_data="menu_by_brand&1"),
+            types.InlineKeyboardButton(
+                MENU_BY_CATEGORY_BUTTON, callback_data="menu_by_cat&1"
+            ),
+            types.InlineKeyboardButton(
+                MENU_BY_BRAND_BUTTON, callback_data="menu_by_brand&1"
+            ),
         ]
     )
     structure.append(
@@ -94,10 +99,10 @@ def menu(msg: types.Message, edit=False):
     keyboard = types.InlineKeyboardMarkup(structure)
     if edit:
         bot.edit_message_text(
-            "Это меню", msg.chat.id, msg.message_id, reply_markup=keyboard
+            MENU_MESSAGE, msg.chat.id, msg.message_id, reply_markup=keyboard
         )
     else:
-        bot.send_message(msg.chat.id, "Это меню", reply_markup=keyboard)
+        bot.send_message(msg.chat.id, MENU_MESSAGE, reply_markup=keyboard)
 
 
 @bot.callback_query_handler(func=lambda data: data.data.split("&")[0] == "back")
@@ -136,9 +141,9 @@ def menu_by_brand(data: types.CallbackQuery):
     keyboard = tools.get_inline_keyboard_page(
         brands, int(data.data.split("&")[1]), 2, "menu_by_brand&"
     )
-    bot.answer_callback_query(data.id, "Бренды")
+    bot.answer_callback_query(data.id, BRAND_SUBMENU_BUTTON_ANSWER)
     bot.edit_message_text(
-        "Выберите бренд",
+        BRAND_SUBMENU_MESSAGE,
         data.message.chat.id,
         data.message.message_id,
         reply_markup=keyboard,
@@ -164,10 +169,10 @@ def products_by_brand(data: types.CallbackQuery):
         pagination_callback=f"brand&{brand_id}&",
         back_to="menu_by_brand&1",
     )
-    bot.answer_callback_query(data.id, "Товары")
+    bot.answer_callback_query(data.id, BRAND_SUBMENU_BUTTON_ANSWER)
     try:
         bot.edit_message_text(
-            "Выберите товар",
+            BRAND_SUBMENU_MESSAGE,
             data.message.chat.id,
             data.message.message_id,
             reply_markup=keyboard,
@@ -179,7 +184,9 @@ def products_by_brand(data: types.CallbackQuery):
             bot.delete_message(data.message.chat.id, data.message.message_id)
         except telebot.apihelper.ApiTelegramException:
             pass
-        bot.send_message(data.message.chat.id, "Выберите товар", reply_markup=keyboard)
+        bot.send_message(
+            data.message.chat.id, BRAND_SUBMENU_MESSAGE, reply_markup=keyboard
+        )
 
 
 @bot.callback_query_handler(func=lambda data: data.data.split("&")[0] == "menu_by_cat")
@@ -194,9 +201,9 @@ def menu_by_category(data: types.CallbackQuery):
     keyboard = tools.get_inline_keyboard_page(
         categories, int(data.data.split("&")[1]), 2, "menu_by_cat&"
     )
-    bot.answer_callback_query(data.id, "Категории")
+    bot.answer_callback_query(data.id, CATEGORY_SUBMENU_BUTTON_ANSWER)
     bot.edit_message_text(
-        "Выберите категорию",
+        CATEGORY_SUBMENU_MESSAGE,
         data.message.chat.id,
         data.message.message_id,
         reply_markup=keyboard,
@@ -206,7 +213,7 @@ def menu_by_category(data: types.CallbackQuery):
 @bot.callback_query_handler(func=lambda data: data.data.startswith("category"))
 def products_by_category(data: types.CallbackQuery):
     logging.info(f"{data.message.chat.id} came with {data.data}")
-    category_id = data.data.split("&")[1]
+    category_id = int(data.data.split("&")[1])
     page = int(data.data.split("&")[2]) if len(data.data.split("&")) == 3 else 1
     products = api.get_products(category_id=category_id)
     keyboard_buttons = tuple(
@@ -222,10 +229,10 @@ def products_by_category(data: types.CallbackQuery):
         "&".join(data.data.split("&")[:2]) + "&",
         back_to="menu_by_cat&1",
     )
-    bot.answer_callback_query(data.id, "Товары")
+    bot.answer_callback_query(data.id, PRODUCTS_BY_CATEGORY_BUTTON_ANSWER)
     try:
         bot.edit_message_text(
-            "Выберите товар",
+            PRODUCTS_BY_CATEGORY_MESSAGE,
             data.message.chat.id,
             data.message.message_id,
             reply_markup=keyboard,
@@ -236,7 +243,9 @@ def products_by_category(data: types.CallbackQuery):
             bot.delete_message(data.message.chat.id, data.message.message_id)
         except telebot.apihelper.ApiTelegramException:
             pass
-        bot.send_message(data.message.chat.id, "Выберите товар", reply_markup=keyboard)
+        bot.send_message(
+            data.message.chat.id, PRODUCTS_BY_CATEGORY_MESSAGE, reply_markup=keyboard
+        )
 
 
 # -------------------------------------------------------------------------------------
@@ -250,23 +259,30 @@ def product_card(data: types.CallbackQuery):
         product = api.get_products(id=int(direct_data.split("&")[1]))[0]
     except FileNotFoundError:
         bot.edit_message_text(
-            "Товар не найден",
+            PRODUCT_NOT_FOUND_MESSAGE,
             data.message.chat.id,
             data.message.message_id,
             reply_markup=quick_markup({"Назад": {"callback_query": from_data}}),
         )
         return
-    text = "*Производитель:* "
-    text += product.get_brand_name() + "\n"
-    text += "*Наименование:* " + product.name + "\n"
-    text += (("*Размер:* " + product.volume) if product.volume else "") + "\n"
-    text += "*Цена:* " + f"{product.price} ₽"
+    brand = product.get_brand_name()
+    category = product.get_category_name()
+    for char in BANNED_CHARS:
+        product.name = product.name.replace(char, "\\" + char)
+        brand = brand.replace(char, "\\" + char)
+        # category=category.replace(char,'\\'+char)
+        product.volume = product.volume.replace(char, "\\" + char)
+    text = PRODUCT_CARD.format(price=product.price, brand=brand, name=product.name)
+    if product.volume != "Безразмерный":
+        text += "\n" + PRODUCT_CARD_SIZE.format(size=product.volume)
     keyboard = keyboard_for_product(
         chat_id=data.message.chat.id, product=product, from_data=from_data
     )
     photo = product.get_photo()
     bot.delete_message(data.message.chat.id, data.message.message_id)
-    bot.send_photo(data.message.chat.id, photo, text, "Markdown", reply_markup=keyboard)
+    bot.send_photo(
+        data.message.chat.id, photo, text, "MarkdownV2", reply_markup=keyboard
+    )
 
 
 def keyboard_for_product(chat_id: int, product: models.Product, from_data: str):
@@ -280,7 +296,7 @@ def keyboard_for_product(chat_id: int, product: models.Product, from_data: str):
             keyboard.append(
                 [
                     types.InlineKeyboardButton(
-                        "Ещё есть на " + prod.volume,
+                        ANOTHER_SIZE_BUTTON,
                         callback_data=f"product&{prod.id}" + f";{from_data}"
                         if from_data is not None
                         else "",
@@ -296,11 +312,11 @@ def keyboard_for_product(chat_id: int, product: models.Product, from_data: str):
 @bot.message_handler(commands=["cart"])
 def get_cart(msg: types.Message, edit=False):
     logging.info(f"{msg.chat.id} came")
-    cart_text = "В корзине: \n"
+    cart_text = [FIRST_CART_MESSAGE]
     try:
         cart_list = api.get_cart(msg.chat.id)
     except FileNotFoundError:
-        cart_text = "Корзина пуста"
+        cart_text = EMPTY_CART_MESSAGE
         keyboard = quick_markup(
             {
                 "Обновить корзину": {"callback_data": "cart"},
@@ -318,14 +334,26 @@ def get_cart(msg: types.Message, edit=False):
                 item.catalogue_item.volume = item.catalogue_item.volume.replace(
                     char, "\\" + char
                 )
-            cart_text += f"{index + 1}\\) _{item.catalogue_item.name}_ {'__' + item.catalogue_item.volume + '__' if item.catalogue_item.volume != 'Безразмерный' else ''} {item.quantity}шт⋅{item.catalogue_item.price}₽ \\= *{item.sum}₽*\n"
+            cart_text.append(
+                ITEM_CART_MESSAGE.format(
+                    number=index,
+                    name=item.catalogue_item.name,
+                    size=item.catalogue_item.volume
+                    if item.catalogue_item.volume != "Безразмерный"
+                    else " ",
+                    price=item.catalogue_item.price,
+                    quantity=item.quantity,
+                    sum=item.sum,
+                )
+            )
             sum_ += item.sum
-        cart_text += f"\n*Итого: {sum_}₽*"
+        cart_text.append(END_CART_MESSAGE.format(sum=sum_))
+        cart_text = '\n'.join(cart_text)
         print(cart_text)
         keyboard = types.InlineKeyboardMarkup()
         keyboard.add(
             types.InlineKeyboardButton(
-                "Редактировать корзину", callback_data="edit_cart"
+                EDIT_CART_BUTTON, callback_data="edit_cart"
             )
         )
         keyboard.add(
@@ -333,7 +361,7 @@ def get_cart(msg: types.Message, edit=False):
         )
         keyboard.add(
             types.InlineKeyboardButton(
-                "Перейти к оформлению заказа", callback_data="checkout"
+                CHECKOUT_BUTTON, callback_data="checkout"
             )
         )
         keyboard.add(types.InlineKeyboardButton("В меню", callback_data="back&menu"))
@@ -362,12 +390,12 @@ def get_cart_by_callback(data):
 def edit_cart(data: types.CallbackQuery, answer=True):
     logging.info(f"{data.message.chat.id} came with {data.data}")
     page = int(data.data.split("&")[1]) if len(data.data.split("&")) > 1 else 1
-    cart_text = "В корзине: \n"
+    cart_text = [FIRST_CART_MESSAGE]
     try:
         cart_list = api.get_cart(data.message.chat.id)
     except FileNotFoundError:
         bot.edit_message_text(
-            "Корзина пуста",
+            EMPTY_CART_MESSAGE,
             data.message.chat.id,
             data.message.message_id,
             reply_markup=quick_markup({"Назад": {"callback_data": "back&cart"}}),
@@ -389,7 +417,18 @@ def edit_cart(data: types.CallbackQuery, answer=True):
             item.catalogue_item.volume = item.catalogue_item.volume.replace(
                 char, "\\" + char
             )
-        cart_text += f"{index + 1}\\) _{item.catalogue_item.name}_ {'__' + item.catalogue_item.volume + '__' if item.catalogue_item.volume != 'Безразмерный' else ''} {item.quantity}шт⋅{item.catalogue_item.price}₽ \\= *{item.sum}₽*\n"
+        cart_text.append(
+            ITEM_CART_MESSAGE.format(
+                number=index,
+                name=item.catalogue_item.name,
+                size=item.catalogue_item.volume
+                if item.catalogue_item.volume != "Безразмерный"
+                else " ",
+                price=item.catalogue_item.price,
+                quantity=item.quantity,
+                sum=item.sum,
+            )
+        )
         sum_ += item.sum
         buttons.append(
             types.InlineKeyboardButton(
@@ -408,11 +447,10 @@ def edit_cart(data: types.CallbackQuery, answer=True):
                 f"{item.quantity}шт ❌", callback_data=f"remove&{item.cart_id}&{page}"
             )
         )
-    cart_text += f"\n*Итого: {sum_}₽*"
+    cart_text.append(END_CART_MESSAGE.format(sum=sum_))
+    cart_text = '\n'.join(cart_text)
     if answer:
-        bot.answer_callback_query(
-            data.id, "Выберите товар, который хотите отредактировать"
-        )
+        bot.answer_callback_query(data.id, EDIT_CART_BUTTON_ANSWER)
     keyboard = tools.get_inline_keyboard_page(
         buttons, page, 4, "edit_cart&", back_to="cart"
     )
@@ -433,7 +471,9 @@ def edit_quantity(data: types.CallbackQuery):
     page = int(data.data.split("&")[3])
     api.edit_cart(cart_id, data.message.chat.id, quantity)
     data.data = f"edit_cart&{page}"
-    bot.answer_callback_query(data.id, str(quantity))
+    bot.answer_callback_query(
+        data.id, CHANGE_QUANTITY_BUTTON_ANSWER.format(quantity=quantity)
+    )
     edit_cart(data, False)
 
 
@@ -444,9 +484,9 @@ def remove_from_cart(data: types.CallbackQuery):
     try:
         api.edit_cart(int(data.data.split("&")[1]), data.message.chat.id, 0)
     except FileNotFoundError:
-        bot.answer_callback_query(data.id, "Товара в корзине не было")
+        bot.answer_callback_query(data.id, NO_PRODUCT_IN_CART_ON_EDIT_BUTTON_ANSWER)
     else:
-        bot.answer_callback_query(data.id, "Удалено из корзины")
+        bot.answer_callback_query(data.id, DELETED_FROM_CART_BUTTON_ANSWER)
     data.data = f"edit_cart&{page}"
     edit_cart(data)
 
@@ -458,7 +498,9 @@ def add_to_cart(data: types.CallbackQuery):
     product = direct_data.split("&")[1]
     if api.add_to_cart(product_id=product, chat_id=data.message.chat.id):
         product = api.get_products(id=int(product))[0]
-        bot.answer_callback_query(data.id, f"{product.name} в корзине")
+        bot.answer_callback_query(
+            data.id, ADD_TO_CART_BUTTON_ANSWER.format(product_name=product.name)
+        )
         keyboard = keyboard_for_product(data.message.chat.id, product, from_data)
         # try:
         bot.edit_message_reply_markup(
@@ -468,7 +510,7 @@ def add_to_cart(data: types.CallbackQuery):
         #     product_card(data)
 
     else:
-        bot.answer_callback_query(data.id, "Произошла ошибка")
+        bot.answer_callback_query(data.id, ADD_TO_CART_FAIL_BUTTON_ANSWER)
 
 
 @bot.callback_query_handler(lambda data: data.data.split("&")[0] == "edit")
@@ -493,12 +535,12 @@ def edit_product_cart(data: types.CallbackQuery):
             api.edit_cart(cart_id, data.message.chat.id, quantity := int(quantity))
             cart_item.quantity = 0
     except FileNotFoundError:
-        bot.answer_callback_query(data.id, "Товара в корзине нет")
+        bot.answer_callback_query(data.id, NO_PRODUCT_IN_CART_ON_EDIT_BUTTON_ANSWER)
         cart_item = api.get_products(id=catalogue_id)[0]
         keyboard = keyboard_for_product(data.message.chat.id, cart_item, from_data)
     else:
         bot.answer_callback_query(
-            data.id, str(quantity) if quantity else "Удалено из корзины"
+            data.id, str(quantity) if quantity else DELETED_FROM_CART_BUTTON_ANSWER
         )
         keyboard = keyboard_for_product(
             data.message.chat.id, cart_item.catalogue_item, from_data
@@ -520,14 +562,15 @@ def default_answer(data: types.CallbackQuery):
 
 
 def cart_buttons_for_product(
-    product: models.Product, chat_id: int, from_data: str
+        product: models.Product, chat_id: int, from_data: str
 ) -> list[types.InlineKeyboardButton]:
     try:
         cart = api.get_cart(chat_id)
     except FileNotFoundError:
         return [
             types.InlineKeyboardButton(
-                "В корзину", callback_data=f"add_to_cart&{product.id};{from_data}"
+                ADD_TO_CART_BUTTON,
+                callback_data=f"add_to_cart&{product.id};{from_data}",
             )
         ]
     in_cart = False
@@ -557,7 +600,8 @@ def cart_buttons_for_product(
     if not in_cart:
         buttons = [
             types.InlineKeyboardButton(
-                "В корзину", callback_data=f"add_to_cart&{product.id};{from_data}"
+                ADD_TO_CART_BUTTON,
+                callback_data=f"add_to_cart&{product.id};{from_data}",
             )
         ]
     return buttons
