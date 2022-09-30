@@ -20,18 +20,19 @@ PRODUCTS_BY_CATEGORY_BUTTON_ANSWER = "Товары"
 PRODUCTS_BY_CATEGORY_MESSAGE = "Выберите товар"
 
 # С МАРКДАУНОМ
-PRODUCT_CARD = """
-    *Производитель:* {brand} 
-    *Наименование:* {name}
-    *Цена:* {price} ₽
-    """
+PRODUCT_CARD = \
+"""
+*Производитель:* {brand} 
+*Наименование:* {name}
+*Цена:* {price} ₽
+"""
 PRODUCT_CARD_SIZE = "*Размер:* {size}"  # ОПЦИОНАЛЬНОЕ
 # КОНЕЦ С МАРКДАУНОМ
 
 
 ANOTHER_SIZE_BUTTON = "Ещё есть в {size} размере"
 
-CHECKOUT_BUTTON="Перейти к оформлению заказа"
+CHECKOUT_BUTTON = "Перейти к оформлению заказа"
 EDIT_CART_BUTTON = "Редактировать корзину"
 EDIT_CART_BUTTON_ANSWER = "Выберите товар, который хотите отредактировать"
 CHANGE_QUANTITY_BUTTON_ANSWER = "В корзине {quantity}шт"
@@ -45,6 +46,23 @@ ADD_TO_CART_BUTTON = "В корзину"
 
 ADD_TO_CART_BUTTON_ANSWER = "{product_name} в корзине"
 DELETED_FROM_CART_BUTTON_ANSWER = "Удалено из корзины"
+
+ORDER_COMPLETE_BUTTON_ANSWER = "Заказ отправлен"
+ORDER_COMPLETE_MESSAGE = "Спасибо за заказ"
+
+UNREGISTERED_MESSAGE = "Вы не зарегистрированы"
+UNREGISTERED_BUTTON_ANSWER = "Необходимо пройти регистрацию"
+REGISTRATION_COMMENT_MESSAGE = "Комментарий (код подъезда, например)"
+REGISTRATION_APARTMENT_MESSAGE = "Введите квартиру"
+REGISTRATION_FLOOR_MESSAGE = "Введите этаж"
+REGISTRATION_ENTRANCE_MESSAGE = "Введите подъезд"
+REGISTRATION_HOUSE_MESSAGE = "Введите дом"
+REGISTRATION_STREET_MESSAGE = "Введите улицу"
+REGISTRATION_PHONE_MESSAGE = "Введите номер телефона"
+REGISTRATION_PHONE_BUTTON = "Поделиться номером телефона"
+
+ORDER_FIRST_MESSAGE = "Заказ:"
+ORDER_ADDRESS_MESSAGE = "Адрес:"
 
 """
 ОШИБКИ

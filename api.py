@@ -10,7 +10,9 @@ orders = {}
 
 
 def get_cart(chat_id) -> list[CartItem]:
-    response = requests.get("http://127.0.0.1:8000/api/getCart", params={"chat_id": chat_id})
+    response = requests.get(
+        "http://127.0.0.1:8000/api/getCart", params={"chat_id": chat_id}
+    )
     if response.status_code == 404:
         raise FileNotFoundError("Cart is empty")
     cart = []
@@ -46,7 +48,9 @@ def get_categories() -> list[Category]:
     )
 
 
-def get_products(id: int = None, name: str = None, category_id: int = None, brand_id: int = None) -> list[Product]:
+def get_products(
+    id: int = None, name: str = None, category_id: int = None, brand_id: int = None
+) -> list[Product]:
     payload = {}
     if id:
         payload["id"] = id
