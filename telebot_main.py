@@ -326,7 +326,6 @@ def get_cart(msg: types.Message, edit=False):
             sum_ += item.sum
         cart_text.append(END_CART_MESSAGE.format(sum=sum_))
         cart_text = "\n".join(cart_text)
-        print(cart_text)
         keyboard = types.InlineKeyboardMarkup()
         keyboard.add(
             types.InlineKeyboardButton(EDIT_CART_BUTTON, callback_data="edit_cart")
