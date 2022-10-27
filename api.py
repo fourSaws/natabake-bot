@@ -100,7 +100,7 @@ def add_to_cart(chat_id: int, product_id: int) -> bool:
         params={"id": product_id, "chat_id": chat_id},
     )
     if response.status_code != 200:
-        logging.error(f"addToCart returned code {response.status_code}. Url was {response.url}add")
+        logging.error(f"addToCart returned code {response.status_code}. Url was {response.url}")
         return False
     return True
 

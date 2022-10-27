@@ -78,7 +78,7 @@ def cart_buttons_for_product(
     in_cart = False
     buttons = []
     for prod_in_cart in cart:
-        if prod_in_cart.catalogue_item == product:
+        if prod_in_cart.catalogue_item.id == product.id:
             in_cart = True
             buttons.append(
                 types.InlineKeyboardButton(
@@ -117,7 +117,7 @@ def keyboard_for_product(
     if len(other) > 1:
         other.remove(product)
     for prod in other:
-        if prod != product:
+        if prod.id != product.id:
             logging.info(f"found different {prod=} {product=}")
             keyboard.append(
                 [
