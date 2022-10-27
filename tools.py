@@ -5,8 +5,8 @@ import models
 import api
 import telebot
 from telebot import types
-
-from os import environ
+from keys import *
+import secure
 from telebot_main import BANNED_CHARS
 
 
@@ -66,7 +66,8 @@ def cart_buttons_for_product(
     except FileNotFoundError:
         return [
             types.InlineKeyboardButton(
-                "В корзину", callback_data=f"add_to_cart&{product.id};{from_data}"
+                ADD_TO_CART_BUTTON,
+                callback_data=f"add_to_cart&{product.id};{from_data}",
             )
         ]
     in_cart = False
@@ -96,7 +97,8 @@ def cart_buttons_for_product(
     if not in_cart:
         buttons = [
             types.InlineKeyboardButton(
-                "В корзину", callback_data=f"add_to_cart&{product.id};{from_data}"
+                ADD_TO_CART_BUTTON,
+                callback_data=f"add_to_cart&{product.id};{from_data}",
             )
         ]
     return buttons
@@ -108,16 +110,12 @@ def keyboard_for_product(chat_id: int, product: models.Product, from_data: str):
     if len(other) > 1:
         other.remove(product)
     for prod in other:
-        if (
-            prod != product
-            and prod.brand == product.brand
-            and prod.category == product.category
-        ):
+        if prod != product:
             logging.info(f"found different {prod=} {product=}")
             keyboard.append(
                 [
                     types.InlineKeyboardButton(
-                        "Ещё есть на " + prod.volume,
+                        ANOTHER_SIZE_BUTTON,
                         callback_data=f"product&{prod.id}" + f";{from_data}"
                         if from_data is not None
                         else "",
@@ -131,7 +129,6 @@ def keyboard_for_product(chat_id: int, product: models.Product, from_data: str):
 
 def order_paid(order_id: int):
     order = api.get_order(order_id)
-    user = api.get_user(order.client)
     if order.status not in (models.Status.CASH, models.Status.PAID):
         raise ValueError("Order isn't paid")
     for char in BANNED_CHARS:
@@ -144,7 +141,7 @@ def order_paid(order_id: int):
 Телефон: \\{user.phone_number}
 Адрес:
 \t\t{order.address}
-
+    
 Заказ оплачен *__{"Картой" if order.status == models.Status.PAID else "Наличными"}__*
     """
     bot = telebot.TeleBot(token=environ.get('notification_token'))

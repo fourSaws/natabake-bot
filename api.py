@@ -158,10 +158,3 @@ def get_order(order_id: int) -> Order:
 
 def get_orders(chat_id: int) -> list[Order]:
     raise NotImplementedError
-
-
-def clear_cart(chat_id:int):
-    response = requests.get(
-        "http://127.0.0.1:8000/api/clearCart",
-        params={"chat_id": chat_id},
-    )
