@@ -1,3 +1,4 @@
+import os
 import logging
 import typing
 from datetime import datetime
@@ -7,7 +8,6 @@ from telebot.util import quick_markup
 from keys import *
 import api
 import models
-import secure
 import tools
 
 logging.basicConfig(
@@ -39,7 +39,7 @@ BANNED_CHARS = (
 )
 FREE_DELIVERY_FROM = 1200
 DELIVERY_COST = 150
-bot = TeleBot(token=secure.test_token)
+bot = TeleBot(token=os.environ.get('teletoken'))
 logger = logging.getLogger(__name__)
 
 

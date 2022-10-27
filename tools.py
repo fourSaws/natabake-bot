@@ -6,7 +6,6 @@ import api
 import telebot
 from telebot import types
 from keys import *
-import secure
 from telebot_main import BANNED_CHARS
 
 
