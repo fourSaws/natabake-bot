@@ -158,14 +158,9 @@ def order_paid(order_id: int, chat_id: int, notify: tuple[int]):
 Заказ оплачен *__{"Картой" if order.status == models.Status.PAID else "Наличными"}__*
     """
     bot = telebot.TeleBot(token=environ.get("notification_token"))
-    try:
-        bot.send_message(
-            environ.get("notification_chat"), notification_text, parse_mode="MarkdownV2"
-        )
-    except telebot.apihelper.ApiTelegramException:
-        for chat in notify:
-            try:
-                bot.send_message(chat, notification_text)
-            except telebot.apihelper.ApiTelegramException as exc:
-                logger.error(f"Unable to notify {chat}", exc_info=exc)
+    for chat in notify:
+        try:
+            bot.send_message(chat, notification_text)
+        except telebot.apihelper.ApiTelegramException as exc:
+            logger.error(f"Unable to notify {chat}", exc_info=exc)
     api.clear_cart(order.client)
