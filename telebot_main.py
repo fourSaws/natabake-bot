@@ -84,14 +84,9 @@ def menu(msg: types.Message, edit=False):
         cart = []
     structure = []
     structure.append(
-        [
-            types.InlineKeyboardButton(
-                MENU_BY_CATEGORY_BUTTON, callback_data="menu_by_cat&1"
-            ),
-            types.InlineKeyboardButton(
-                MENU_BY_BRAND_BUTTON, callback_data="menu_by_brand&1"
-            ),
-        ]
+            [types.InlineKeyboardButton(
+                TO_CATALOGUE_BUTTON, callback_data="menu_by_cat&1"
+            )]
     )
     structure.append(
         [
@@ -117,9 +112,9 @@ def back(data: types.CallbackQuery):
         case "menu":
             bot.answer_callback_query(data.id, "Меню")
             menu(data.message, True)
-        case "menu_by_brand":
-            data.data = "&".join(data.data.split("&")[1:])
-            menu_by_brand(data)
+        # case "menu_by_brand":
+        #     data.data = "&".join(data.data.split("&")[1:])
+        #     menu_by_brand(data)
         case "menu_by_cat":
             data.data = "&".join(data.data.split("&")[1:])
             menu_by_category(data)
@@ -128,7 +123,7 @@ def back(data: types.CallbackQuery):
             products_by_brand(data)
         case "category":
             data.data = "&".join(data.data.split("&")[1:])
-            products_by_category(data)
+            brands_by_category(data)
         case "cart":
             data.data = "&".join(data.data.split("&")[1:])
             get_cart_by_callback(data)
@@ -136,34 +131,35 @@ def back(data: types.CallbackQuery):
             raise ValueError(f'Unresolved for {data.data.split("&")[1]}')
 
 
-@bot.callback_query_handler(func=lambda data: data.data.startswith("menu_by_brand"))
-def menu_by_brand(data: types.CallbackQuery):
-    logger.info(f"{data.message.chat.id} came with {data.data}")
-    brands = tuple(
-        types.InlineKeyboardButton(brand.name, callback_data=f"brand&{brand.id}&1")
-        for brand in api.get_brands()
-    )
-    keyboard = tools.get_inline_keyboard_page(
-        brands, int(data.data.split("&")[1]), 2, "menu_by_brand&"
-    )
-    bot.answer_callback_query(data.id, BRAND_SUBMENU_BUTTON_ANSWER)
-    bot.edit_message_text(
-        BRAND_SUBMENU_MESSAGE,
-        data.message.chat.id,
-        data.message.message_id,
-        reply_markup=keyboard,
-    )
+# @bot.callback_query_handler(func=lambda data: data.data.startswith("menu_by_brand"))
+# def menu_by_brand(data: types.CallbackQuery):
+#     logger.info(f"{data.message.chat.id} came with {data.data}")
+#     brands = tuple(
+#         types.InlineKeyboardButton(brand.name, callback_data=f"brand&{brand.id}&1")
+#         for brand in api.get_brands()
+#     )
+#     keyboard = tools.get_inline_keyboard_page(
+#         brands, int(data.data.split("&")[1]), 2, "menu_by_brand&"
+#     )
+#     bot.answer_callback_query(data.id, BRAND_SUBMENU_BUTTON_ANSWER)
+#     bot.edit_message_text(
+#         BRAND_SUBMENU_MESSAGE,
+#         data.message.chat.id,
+#         data.message.message_id,
+#         reply_markup=keyboard,
+#     )
 
 
 @bot.callback_query_handler(func=lambda data: data.data.startswith("brand"))
 def products_by_brand(data: types.CallbackQuery):
     logger.info(f"{data.message.chat.id} came with {data.data}")
-    brand_id = int(data.data.split("&")[1])
-    page = int(data.data.split("&")[2])
+    dat,back_to=data.data.split(';')
+    brand_id = int(dat.split("&")[1])
+    page = int(dat.split("&")[2])
     products = api.get_products(brand_id=brand_id)
     keyboard_buttons = tuple(
         types.InlineKeyboardButton(
-            product.name, callback_data=f"product&{product.id};{data.data}"
+            product.name, callback_data=f"product&{product.id}*{data.data}"
         )
         for product in products
     )
@@ -172,7 +168,7 @@ def products_by_brand(data: types.CallbackQuery):
         page,
         2,
         pagination_callback=f"brand&{brand_id}&",
-        back_to="menu_by_brand&1",
+        back_to=back_to,
     )
     bot.answer_callback_query(data.id, BRAND_SUBMENU_BUTTON_ANSWER)
     try:
@@ -216,16 +212,16 @@ def menu_by_category(data: types.CallbackQuery):
 
 
 @bot.callback_query_handler(func=lambda data: data.data.startswith("category"))
-def products_by_category(data: types.CallbackQuery):
+def brands_by_category(data: types.CallbackQuery):
     logger.info(f"{data.message.chat.id} came with {data.data}")
     category_id = int(data.data.split("&")[1])
     page = int(data.data.split("&")[2]) if len(data.data.split("&")) == 3 else 1
-    products = api.get_products(category_id=category_id)
+    brands = api.get_brands(category_id=category_id)
     keyboard_buttons = tuple(
         types.InlineKeyboardButton(
-            product.name, callback_data=f"product&{product.id};{data.data}"
+            brand.name, callback_data=f"brand&{brand.id}&1;{data.data}"
         )
-        for product in products
+        for brand in brands
     )
     keyboard = tools.get_inline_keyboard_page(
         keyboard_buttons,
@@ -259,10 +255,9 @@ def products_by_category(data: types.CallbackQuery):
 @bot.callback_query_handler(func=lambda data: data.data.startswith("product"))
 def product_card(data: types.CallbackQuery):
     logger.info(f"{data.message.chat.id} came with {data.data}")
-    direct_data, from_data = data.data.split(";")
-    try:
-        product = api.get_products(id=int(direct_data.split("&")[1]))[0]
-    except FileNotFoundError:
+    direct_data, from_data = data.data.split("*")
+    product = api.get_products(id=int(direct_data.split("&")[1]))[0]
+    if not product:
         bot.edit_message_text(
             PRODUCT_NOT_FOUND_MESSAGE,
             data.message.chat.id,
@@ -850,4 +845,5 @@ def default_answer(data: types.CallbackQuery):
 
 
 if __name__ == "__main__":
+    print(f'Running bot name {bot.get_me().username}')
     bot.polling(non_stop=True)

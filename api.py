@@ -27,13 +27,19 @@ def get_cart(chat_id) -> list[CartItem]:
     return cart
 
 
-def get_brands() -> list[Brand]:
+def get_brands(category_id:int=None) -> list[Brand]:
     response = requests.get("http://127.0.0.1:8000/api/getBrands")
     if response.status_code == 200:
-        return sorted(
-            [Brand(brand["id"], brand["name"]) for brand in response.json()],
-            key=lambda brand: brand.name,
-        )
+        if not category_id:
+            return sorted(
+                [Brand(brand["id"], brand["name"]) for brand in response.json()],
+                key=lambda brand: brand.name,
+            )
+        else:
+            return sorted(
+                [Brand(brand["id"], brand["name"]) for brand in response.json() if get_products(category_id=category_id, brand_id=brand['id'])],
+                key=lambda brand: brand.name,
+            )
     elif response.status_code == 404:
         return []
     else:
@@ -62,7 +68,7 @@ def get_products(
         payload["brand"] = brand_id
     response = requests.get("http://127.0.0.1:8000/api/getProducts", params=payload)
     if not response.json():
-        raise FileNotFoundError(f"No file objects found for given params {payload=}")
+        return []
     else:
         response = response.json()
     products = [
