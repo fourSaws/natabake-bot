@@ -133,16 +133,22 @@ def order_paid(order_id: int):
         raise ValueError("Order isn't paid")
     for char in BANNED_CHARS:
         order.address = order.address.replace(char, "\\" + char)
+        # order.cart=order.cart.replace(char, "\\" + char)
     order.address = order.address.replace("\n", "\n\t\t")
     notification_text = f"""
 *Новый заказ*
 {order.cart}
+Телефон: \\{user.phone_number}
 Адрес:
 \t\t{order.address}
     
 Заказ оплачен *__{"Картой" if order.status == models.Status.PAID else "Наличными"}__*
     """
-    bot = telebot.TeleBot(token=secure.notification_token)
-    bot.send_message(
-        secure.notification_chat, notification_text, parse_mode="MarkdownV2"
-    )
+    bot = telebot.TeleBot(token=environ.get('notification_token'))
+    try:
+        bot.send_message(
+            environ.get('notification_chat'), notification_text, parse_mode="MarkdownV2"
+        )
+    except telebot.apihelper.ApiTelegramException:
+        bot.send_message(environ.get('notification_chat'), notification_text)
+    api.clear_cart(order.client)
