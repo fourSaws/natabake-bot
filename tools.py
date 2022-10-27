@@ -160,7 +160,7 @@ def order_paid(order_id: int, chat_id: int, notify: tuple[int]):
     bot = telebot.TeleBot(token=environ.get("notification_token"))
     for chat in notify:
         try:
-            bot.send_message(chat, notification_text)
+            bot.send_message(chat, notification_text,parse_mode='MarkdownV2')
         except telebot.apihelper.ApiTelegramException as exc:
             logger.error(f"Unable to notify {chat}", exc_info=exc)
     api.clear_cart(order.client)
