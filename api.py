@@ -27,7 +27,7 @@ def get_cart(chat_id) -> list[CartItem]:
     return cart
 
 
-def get_brands(category_id:int=None) -> list[Brand]:
+def get_brands(category_id: int = None) -> list[Brand]:
     response = requests.get("http://127.0.0.1:8000/api/getBrands")
     if response.status_code == 200:
         if not category_id:
@@ -37,7 +37,11 @@ def get_brands(category_id:int=None) -> list[Brand]:
             )
         else:
             return sorted(
-                [Brand(brand["id"], brand["name"]) for brand in response.json() if get_products(category_id=category_id, brand_id=brand['id'])],
+                [
+                    Brand(brand["id"], brand["name"])
+                    for brand in response.json()
+                    if get_products(category_id=category_id, brand_id=brand["id"])
+                ],
                 key=lambda brand: brand.name,
             )
     elif response.status_code == 404:
@@ -164,3 +168,7 @@ def get_order(order_id: int) -> Order:
 
 def get_orders(chat_id: int) -> list[Order]:
     raise NotImplementedError
+
+
+def clear_cart(chat_id: int):
+    requests.get("http://127.0.0.1:8000/api/clearCart", params={"chat_id": chat_id})

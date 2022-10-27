@@ -1,12 +1,18 @@
 import logging
 import math
-from typing import Sequence
+from os import environ
+from typing import Sequence, List, Tuple
+
+from telebot.types import InlineKeyboardButton
+
 import models
 import api
 import telebot
 from telebot import types
 from keys import *
 from telebot_main import BANNED_CHARS
+
+logger = logging.getLogger(__name__)
 
 
 def get_inline_keyboard_page(
@@ -59,16 +65,16 @@ def get_inline_keyboard_page(
 
 def cart_buttons_for_product(
     product: models.Product, chat_id: int, from_data: str
-) -> list[types.InlineKeyboardButton]:
+) -> list[InlineKeyboardButton] | tuple[list[InlineKeyboardButton], bool]:
     try:
         cart = api.get_cart(chat_id)
     except FileNotFoundError:
         return [
             types.InlineKeyboardButton(
                 ADD_TO_CART_BUTTON,
-                callback_data=f"add_to_cart&{product.id};{from_data}",
+                callback_data=f"add_to_cart&{product.id}*{from_data}",
             )
-        ]
+        ], False
     in_cart = False
     buttons = []
     for prod_in_cart in cart:
@@ -77,19 +83,19 @@ def cart_buttons_for_product(
             buttons.append(
                 types.InlineKeyboardButton(
                     "-",
-                    callback_data=f"edit&{prod_in_cart.cart_id}&{prod_in_cart.catalogue_item.id}&{prod_in_cart.quantity - 1};{from_data}",
+                    callback_data=f"edit&{prod_in_cart.cart_id}&{prod_in_cart.catalogue_item.id}&{prod_in_cart.quantity - 1}*{from_data}",
                 )
             )
             buttons.append(
                 types.InlineKeyboardButton(
                     str(prod_in_cart.quantity),
-                    callback_data=f"edit&{prod_in_cart.cart_id}&{prod_in_cart.catalogue_item.id}&0;{from_data}",
+                    callback_data=f"edit&{prod_in_cart.cart_id}&{prod_in_cart.catalogue_item.id}&0*{from_data}",
                 )
             )
             buttons.append(
                 types.InlineKeyboardButton(
                     "+",
-                    callback_data=f"edit&{prod_in_cart.cart_id}&{prod_in_cart.catalogue_item.id}&{prod_in_cart.quantity + 1};{from_data}",
+                    callback_data=f"edit&{prod_in_cart.cart_id}&{prod_in_cart.catalogue_item.id}&{prod_in_cart.quantity + 1}*{from_data}",
                 )
             )
             break
@@ -97,13 +103,15 @@ def cart_buttons_for_product(
         buttons = [
             types.InlineKeyboardButton(
                 ADD_TO_CART_BUTTON,
-                callback_data=f"add_to_cart&{product.id};{from_data}",
+                callback_data=f"add_to_cart&{product.id}*{from_data}",
             )
         ]
-    return buttons
+    return buttons, in_cart
 
 
-def keyboard_for_product(chat_id: int, product: models.Product, from_data: str):
+def keyboard_for_product(
+    chat_id: int, product: models.Product, from_data: str
+) -> types.InlineKeyboardMarkup:
     other = api.get_products(name=product.name)
     keyboard = []
     if len(other) > 1:
@@ -115,18 +123,24 @@ def keyboard_for_product(chat_id: int, product: models.Product, from_data: str):
                 [
                     types.InlineKeyboardButton(
                         ANOTHER_SIZE_BUTTON,
-                        callback_data=f"product&{prod.id}" + f";{from_data}"
+                        callback_data=f"product&{prod.id}" + f"*{from_data}"
                         if from_data is not None
                         else "",
                     )
                 ]
             )
-    keyboard.append(cart_buttons_for_product(product, chat_id, from_data))
+    buttons, in_cart = cart_buttons_for_product(product, chat_id, from_data)
+    keyboard.append(buttons)
+    if in_cart:
+        keyboard.append(
+            [types.InlineKeyboardButton(CHECKOUT_BUTTON, callback_data="cart")]
+        )
     keyboard.append([types.InlineKeyboardButton("Назад", callback_data=from_data)])
     return types.InlineKeyboardMarkup(keyboard)
 
 
-def order_paid(order_id: int):
+def order_paid(order_id: int, chat_id: int, notify: tuple[int]):
+    user = api.get_user(chat_id)
     order = api.get_order(order_id)
     if order.status not in (models.Status.CASH, models.Status.PAID):
         raise ValueError("Order isn't paid")
@@ -143,11 +157,15 @@ def order_paid(order_id: int):
     
 Заказ оплачен *__{"Картой" if order.status == models.Status.PAID else "Наличными"}__*
     """
-    bot = telebot.TeleBot(token=environ.get('notification_token'))
+    bot = telebot.TeleBot(token=environ.get("notification_token"))
     try:
         bot.send_message(
-            environ.get('notification_chat'), notification_text, parse_mode="MarkdownV2"
+            environ.get("notification_chat"), notification_text, parse_mode="MarkdownV2"
         )
     except telebot.apihelper.ApiTelegramException:
-        bot.send_message(environ.get('notification_chat'), notification_text)
+        for chat in notify:
+            try:
+                bot.send_message(chat, notification_text)
+            except telebot.apihelper.ApiTelegramException as exc:
+                logger.error(f"Unable to notify {chat}", exc_info=exc)
     api.clear_cart(order.client)
