@@ -4,6 +4,7 @@ from random import randint
 import requests
 
 from models import *
+from models import User
 
 users = {}
 orders = {}
@@ -59,7 +60,7 @@ def get_categories() -> list[Category]:
 
 
 def get_products(
-    id: int = None, name: str = None, category_id: int = None, brand_id: int = None
+        id: int = None, name: str = None, category_id: int = None, brand_id: int = None
 ) -> list[Product]:
     payload = {}
     if id:
@@ -134,14 +135,30 @@ def edit_cart(cart_id: int, chat_id: int, quantity: int) -> CartItem:
 
 
 def create_user(user: User) -> User:
-    global users
-    users[user.chat_id] = user
-    return users[user.chat_id]
+    response = requests.get(
+        "http://127.0.0.1:8000/api/createUser",
+        params={"chat_id": user.chat_id, "phone_number": user.phone_number, "address": user.address,
+                "comment": user.comment},
+    )
+    json = response.json()[0]
+    return User(chat_id=int(json['chat_id']),
+                phone_number=json['phone_number'],
+                address=json['address'],
+                comment=json['comment'])
 
 
-def get_user(chat_id: int) -> User:
-    global users
-    return users.get(chat_id)
+def get_user(chat_id: int) -> User | bool:
+    response = requests.get(
+        "http://127.0.0.1:8000/api/getUser",
+        params={"chat_id": chat_id},
+    )
+    json = response.json()[0]
+    if json:
+        return User(chat_id=int(json['chat_id']),
+                    phone_number=json['phone_number'],
+                    address=json['address'],
+                    comment=json['comment'])
+    return False
 
 
 def create_order(order: Order) -> Order:

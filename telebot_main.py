@@ -545,7 +545,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
     edit = isinstance(data, types.CallbackQuery)
     logger.info(f"{message.chat.id} came")
     user = api.get_user(message.chat.id)
-    if user is None:
+    if not user:
         if isinstance(data, types.CallbackQuery):
             bot.answer_callback_query(data.id, UNREGISTERED_BUTTON_ANSWER)
         return register(message)
