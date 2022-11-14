@@ -12,12 +12,12 @@ import models
 import tools
 
 logging.basicConfig(
-    filename=f"bot-from-{datetime.now().date()}.log",
-    filemode="w",
+#    filename=f"bot-from-{datetime.now().date()}.log",
+ #   filemode="a",
     level=logging.INFO,
     format="%(asctime)s - [%(levelname)s] -  (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s",
 )
-NOTIFICATION_CHATS = (354640082, 847709370)
+NOTIFICATION_CHATS = (354640082, 847709370, -1001743990374)
 BANNED_CHARS = (
     "_",
     "*",
@@ -173,7 +173,7 @@ def products_by_brand(data: types.CallbackQuery):
     bot.answer_callback_query(data.id, BRAND_SUBMENU_BUTTON_ANSWER)
     try:
         bot.edit_message_text(
-            BRAND_SUBMENU_MESSAGE,
+            PRODUCTS_BY_CATEGORY_MESSAGE,
             data.message.chat.id,
             data.message.message_id,
             reply_markup=keyboard,
@@ -186,7 +186,7 @@ def products_by_brand(data: types.CallbackQuery):
         except telebot.apihelper.ApiTelegramException:
             pass
         bot.send_message(
-            data.message.chat.id, BRAND_SUBMENU_MESSAGE, reply_markup=keyboard
+            data.message.chat.id, PRODUCTS_BY_CATEGORY_MESSAGE, reply_markup=keyboard
         )
 
 
@@ -233,7 +233,7 @@ def brands_by_category(data: types.CallbackQuery):
     bot.answer_callback_query(data.id, PRODUCTS_BY_CATEGORY_BUTTON_ANSWER)
     try:
         bot.edit_message_text(
-            PRODUCTS_BY_CATEGORY_MESSAGE,
+            BRAND_SUBMENU_MESSAGE,
             data.message.chat.id,
             data.message.message_id,
             reply_markup=keyboard,
@@ -245,7 +245,7 @@ def brands_by_category(data: types.CallbackQuery):
         except telebot.apihelper.ApiTelegramException:
             pass
         bot.send_message(
-            data.message.chat.id, PRODUCTS_BY_CATEGORY_MESSAGE, reply_markup=keyboard
+            data.message.chat.id, BRAND_SUBMENU_MESSAGE, reply_markup=keyboard
         )
 
 
@@ -279,7 +279,10 @@ def product_card(data: types.CallbackQuery):
         chat_id=data.message.chat.id, product=product, from_data=from_data
     )
     photo = product.get_photo()
-    bot.delete_message(data.message.chat.id, data.message.message_id)
+    try:
+        bot.delete_message(data.message.chat.id, data.message.message_id)
+    except telebot.apihelper.ApiTelegramException:
+        pass
     bot.send_photo(
         data.message.chat.id, photo, text, "MarkdownV2", reply_markup=keyboard
     )

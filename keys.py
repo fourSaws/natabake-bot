@@ -28,13 +28,13 @@ PRODUCTS_BY_CATEGORY_MESSAGE = "Выберите товар"
 
 # С МАРКДАУНОМ
 PRODUCT_CARD = """
-*Бренд:* {brand} 
+*Бренд:* {brand}
 *Вкус:* {name}
 *Цена:* {price} ₽
 """
 PRODUCT_CARD_SIZE = "*Информация:* {size}"  # ОПЦИОНАЛЬНОЕ
 # КОНЕЦ С МАРКДАУНОМ
-ANOTHER_SIZE_BUTTON = "Ещё есть в {size} размере"
+ANOTHER_SIZE_BUTTON = "Ещё есть на {size}"
 
 
 CHECKOUT_BUTTON = "Перейти к оформлению заказа"
@@ -53,7 +53,7 @@ ADD_TO_CART_BUTTON_ANSWER = "{product_name} в корзине"
 DELETED_FROM_CART_BUTTON_ANSWER = "Удалено из корзины"
 
 ORDER_COMPLETE_BUTTON_ANSWER = "Заказ отправлен"
-ORDER_COMPLETE_MESSAGE = "Спасибо за заказ"
+ORDER_COMPLETE_MESSAGE = "Спасибо за заказ, мы свяжемся с вами для подтверждения"
 
 UNREGISTERED_MESSAGE = "Вы не зарегистрированы"
 UNREGISTERED_BUTTON_ANSWER = "Необходимо пройти регистрацию"

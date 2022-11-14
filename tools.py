@@ -122,7 +122,7 @@ def keyboard_for_product(
             keyboard.append(
                 [
                     types.InlineKeyboardButton(
-                        ANOTHER_SIZE_BUTTON,
+                        ANOTHER_SIZE_BUTTON.format(size=prod.volume),
                         callback_data=f"product&{prod.id}" + f"*{from_data}"
                         if from_data is not None
                         else "",

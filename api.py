@@ -152,8 +152,9 @@ def get_user(chat_id: int) -> User | bool:
         "http://127.0.0.1:8000/api/getUser",
         params={"chat_id": chat_id},
     )
-    json = response.json()[0]
+    json = response.json()
     if json:
+        json=json[0]
         return User(chat_id=int(json['chat_id']),
                     phone_number=json['phone_number'],
                     address=json['address'],
