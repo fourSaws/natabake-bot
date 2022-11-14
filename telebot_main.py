@@ -169,6 +169,7 @@ def products_by_brand(data: types.CallbackQuery):
         2,
         pagination_callback=f"brand&{brand_id}&",
         back_to=back_to,
+        add_to_pagination=';'+back_to
     )
     bot.answer_callback_query(data.id, BRAND_SUBMENU_BUTTON_ANSWER)
     try:
@@ -859,4 +860,4 @@ def default_answer(data: types.CallbackQuery):
 
 if __name__ == "__main__":
     print(f"Running bot name {bot.get_me().username}")
-    bot.polling(non_stop=True)
+    bot.polling()

@@ -9,14 +9,15 @@ from models import User
 users = {}
 orders = {}
 
-
+server_url='127.0.0.1:8000'
 def get_cart(chat_id) -> list[CartItem]:
     response = requests.get(
-        "http://127.0.0.1:8000/api/getCart", params={"chat_id": chat_id}
+        server_url+"/api/getCart", params={"chat_id": chat_id}
     )
     if response.status_code == 404:
         raise FileNotFoundError("Cart is empty")
     cart = []
+    print(response.url)
     for i in response.json():
         cart.append(
             CartItem(
@@ -29,7 +30,7 @@ def get_cart(chat_id) -> list[CartItem]:
 
 
 def get_brands(category_id: int = None) -> list[Brand]:
-    response = requests.get("http://127.0.0.1:8000/api/getBrands")
+    response = requests.get(server_url+"/api/getBrands")
     if response.status_code == 200:
         if not category_id:
             return sorted(
@@ -52,7 +53,7 @@ def get_brands(category_id: int = None) -> list[Brand]:
 
 
 def get_categories() -> list[Category]:
-    response = requests.get("http://127.0.0.1:8000/api/getCategory")
+    response = requests.get(server_url+"/api/getCategory")
     return sorted(
         [Category(category["id"], category["name"]) for category in response.json()],
         key=lambda category: category.name,
@@ -71,7 +72,7 @@ def get_products(
         payload["category"] = category_id
     if brand_id:
         payload["brand"] = brand_id
-    response = requests.get("http://127.0.0.1:8000/api/getProducts", params=payload)
+    response = requests.get(server_url+"/api/getProducts", params=payload)
     if not response.json():
         return []
     else:
@@ -92,12 +93,12 @@ def get_products(
 
 
 def get_photo(url: str) -> BinaryIO:
-    return urlopen("http://127.0.0.1:8000/media/" + url).read()
+    return urlopen(server_url+"/media/" + url).read()
 
 
 def add_to_cart(chat_id: int, product_id: int) -> bool:
     response = requests.get(
-        "http://127.0.0.1:8000/api/addToCart",
+        server_url+"/api/addToCart",
         params={"id": product_id, "chat_id": chat_id},
     )
     if response.status_code != 200:
@@ -108,7 +109,7 @@ def add_to_cart(chat_id: int, product_id: int) -> bool:
 
 def edit_cart(cart_id: int, chat_id: int, quantity: int) -> CartItem:
     response = requests.get(
-        "http://127.0.0.1:8000/api/editCart",
+        server_url+"/api/editCart",
         params={"product_id": cart_id, "chat_id": chat_id, "quantity": quantity},
     )
     if response.status_code != 200:
@@ -136,7 +137,7 @@ def edit_cart(cart_id: int, chat_id: int, quantity: int) -> CartItem:
 
 def create_user(user: User) -> User:
     response = requests.get(
-        "http://127.0.0.1:8000/api/createUser",
+        server_url+"/api/createUser",
         params={"chat_id": user.chat_id, "phone_number": user.phone_number, "address": user.address,
                 "comment": user.comment},
     )
@@ -149,7 +150,7 @@ def create_user(user: User) -> User:
 
 def get_user(chat_id: int) -> User | bool:
     response = requests.get(
-        "http://127.0.0.1:8000/api/getUser",
+        server_url+"/api/getUser",
         params={"chat_id": chat_id},
     )
     json = response.json()
@@ -189,4 +190,4 @@ def get_orders(chat_id: int) -> list[Order]:
 
 
 def clear_cart(chat_id: int):
-    requests.get("http://127.0.0.1:8000/api/clearCart", params={"chat_id": chat_id})
+    requests.get(server_url+"/api/clearCart", params={"chat_id": chat_id})

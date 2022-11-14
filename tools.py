@@ -22,6 +22,7 @@ def get_inline_keyboard_page(
     pagination_callback: str,
     rows=9,
     back_to="menu",
+    add_to_pagination=''
 ):
     if rows > 9:
         raise ValueError(
@@ -39,7 +40,7 @@ def get_inline_keyboard_page(
     if page > 1:
         btns.append(
             types.InlineKeyboardButton(
-                "<=", callback_data=pagination_callback + str(page - 1)
+                "<=", callback_data=pagination_callback + str(page - 1)+add_to_pagination
             )
         )
     if len(items) > columns * rows:
@@ -56,7 +57,7 @@ def get_inline_keyboard_page(
     if ends_on < len(items):
         btns.append(
             types.InlineKeyboardButton(
-                "=>", callback_data=pagination_callback + str(page + 1)
+                "=>", callback_data=pagination_callback + str(page + 1)+add_to_pagination
             )
         )
     keyboard.append(btns)

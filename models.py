@@ -40,7 +40,11 @@ class Product:
 
     def get_photo(self) -> typing.BinaryIO:
         if self.photo_url:
-            photo = api.get_photo(self.photo_url)
+            try:
+                photo = api.get_photo(self.photo_url)
+            except Exception as exc:
+                logger.error('Unable to get photo',exc)
+                photo = open("no_image.jpg", "rb")
         else:
             photo = open("no_image.jpg", "rb")
         return photo
