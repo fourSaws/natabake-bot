@@ -9,7 +9,7 @@ from models import User
 users = {}
 orders = {}
 
-server_url='127.0.0.1:8000'
+server_url='http://127.0.0.1:8000'
 def get_cart(chat_id) -> list[CartItem]:
     response = requests.get(
         server_url+"/api/getCart", params={"chat_id": chat_id}

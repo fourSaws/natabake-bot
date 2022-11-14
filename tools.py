@@ -113,10 +113,15 @@ def cart_buttons_for_product(
 def keyboard_for_product(
     chat_id: int, product: models.Product, from_data: str
 ) -> types.InlineKeyboardMarkup:
-    other = api.get_products(name=product.name)
+    other = api.get_products(name=product.name, brand_id=product.brand)
+    for i in other:
+        i.photo_url=''
+    buffer=product.photo_url
+    product.photo_url=''
     keyboard = []
     if len(other) > 1:
         other.remove(product)
+    product.photo_url=buffer
     for prod in other:
         if prod.id != product.id:
             logging.info(f"found different {prod=} {product=}")
