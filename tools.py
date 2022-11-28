@@ -147,7 +147,7 @@ def keyboard_for_product(
     return types.InlineKeyboardMarkup(keyboard)
 
 
-def order_paid(order_id: int, chat_id: int, notify: Tuple[int, ...]):
+def order_paid(order_id: int, chat_id: int, notify: Tuple[int, ...], username:str):
     user = api.get_user(chat_id)
     order = api.get_order(order_id)
     if order.status not in (models.Status.CASH, models.Status.PAID):
@@ -160,7 +160,7 @@ def order_paid(order_id: int, chat_id: int, notify: Tuple[int, ...]):
 *Новый заказ*
 {order.cart}
 *Итого: {order.sum}₽*
-Телефон: \\{user.phone_number}
+Телефон: \\{user.phone_number} \\(@{username}\\)
 Адрес:
 \t\t{order.address}
     
