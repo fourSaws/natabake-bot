@@ -602,15 +602,15 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                 )
             )
             order.cart += ITEM_CART_MESSAGE.format(
-                    number=index + 1,
-                    name=item.catalogue_item.name,
-                    size=item.catalogue_item.volume
-                    if item.catalogue_item.volume != "Безразмерный"
-                    else " ",
-                    price=item.catalogue_item.price,
-                    quantity=item.quantity,
-                    sum=item.sum,
-                )+'\n'
+                number=index + 1,
+                name=item.catalogue_item.name,
+                size=item.catalogue_item.volume
+                if item.catalogue_item.volume != "Безразмерный"
+                else " ",
+                price=item.catalogue_item.price,
+                quantity=item.quantity,
+                sum=item.sum,
+            ) + '\n'
             order.sum += item.sum
 
         if order.sum < MIN_ORDER_SUM:
@@ -627,10 +627,10 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
             message_text.append(f"\nДоставка\\: *{DELIVERY_COST}*₽\n")
 
         message_text = "\n".join(message_text)
-        message_text += '\n'+END_CART_MESSAGE.format(sum=order.sum)
+        message_text += '\n' + END_CART_MESSAGE.format(sum=order.sum)
         if order.sum < FREE_DELIVERY_FROM:
             message_text += (
-                f"\n\n*Ещё {FREE_DELIVERY_FROM - order.sum+DELIVERY_COST}₽ и доставка будет бесплатной*"
+                f"\n\n*Ещё {FREE_DELIVERY_FROM - order.sum + DELIVERY_COST}₽ и доставка будет бесплатной*"
             )
         else:
             message_text += "\nПоздравляем, вам доставка бесплатна\\!"
@@ -877,7 +877,7 @@ def pay(data: types.CallbackQuery):
     if method == "cash":
         order.status = models.Status.CASH
         tools.order_paid(
-            order.id, chat_id=data.message.chat.id, notify=NOTIFICATION_CHATS
+            order.id, chat_id=data.message.chat.id, notify=NOTIFICATION_CHATS, username=data.from_user.username
         )
         bot.answer_callback_query(data.id, ORDER_COMPLETE_BUTTON_ANSWER)
         bot.edit_message_text(
