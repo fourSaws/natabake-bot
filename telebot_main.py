@@ -12,8 +12,8 @@ import models
 import tools
 
 logging.basicConfig(
-#    filename=f"bot-from-{datetime.now().date()}.log",
- #   filemode="a",
+    filename=f"bot-from-{datetime.now().date()}.log",
+    filemode="a",
     level=logging.INFO,
     format="%(asctime)s - [%(levelname)s] -  (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s",
 )
@@ -38,8 +38,9 @@ BANNED_CHARS = (
     ".",
     "!",
 )
-FREE_DELIVERY_FROM = 1200
+FREE_DELIVERY_FROM = 1500
 DELIVERY_COST = 150
+MIN_ORDER_SUM = 500
 bot = TeleBot(token=os.environ.get("teletoken"))
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -155,16 +156,16 @@ def products_by_brand(data: types.CallbackQuery):
     logger.info(f"{data.message.chat.id} came with {data.data}")
     dat, back_to = data.data.split(";")
     brand_id = int(dat.split("&")[1])
-    category_id=int(back_to.split("&")[1])
+    category_id = int(back_to.split("&")[1])
     page = int(dat.split("&")[2])
     products_ = api.get_products(brand_id=brand_id, category_id=category_id)
-    names=set()
-    products=[]
+    names = set()
+    products = []
     for product in products_:
         if product.name not in names:
             names.add(product.name)
             products.append(product)
-    products.sort(key=lambda prod:prod.name)
+    products.sort(key=lambda prod: prod.name)
     keyboard_buttons = list(
         types.InlineKeyboardButton(
             product.name, callback_data=f"product&{product.id}*{data.data}"
@@ -177,7 +178,7 @@ def products_by_brand(data: types.CallbackQuery):
         2,
         pagination_callback=f"brand&{brand_id}&",
         back_to=back_to,
-        add_to_pagination=';'+back_to
+        add_to_pagination=";" + back_to,
     )
     bot.answer_callback_query(data.id, BRAND_SUBMENU_BUTTON_ANSWER)
     try:
@@ -585,27 +586,49 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                 item.catalogue_item.volume = item.catalogue_item.volume.replace(
                     char, "\\" + char
                 )
-                brand_name=item.catalogue_item.get_brand_name().replace(char,'\\'+char)
+                brand_name = item.catalogue_item.get_brand_name().replace(
+                    char, "\\" + char
+                )
             order.cart += f"{index + 1}\\)*{brand_name}*  _{item.catalogue_item.name}_ {'__' + item.catalogue_item.volume + '__' if item.catalogue_item.volume != 'Безразмерный' else ''} {item.quantity}шт⋅{item.catalogue_item.price}₽ \\= *{item.sum}₽*\n "
             order.sum += item.sum
-            message_text.append(
-                ITEM_CART_MESSAGE.format(
-                    number=index + 1,
-                    name=item.catalogue_item.name,
-                    size=item.catalogue_item.volume
-                    if item.catalogue_item.volume != "Безразмерный"
-                    else " ",
-                    price=item.catalogue_item.price,
-                    quantity=item.quantity,
-                    sum=item.sum,
-                )
+        else:
+            bot.send_message(
+                data.chat.id,
+                f"До минимальной суммы заказа не хватает {MIN_ORDER_SUM}₽",
             )
+            menu(data.message)
+            return None
+
+        if order.sum < MIN_ORDER_SUM:
+            bot.send_message(
+                data.chat.id,
+                f"До минимальной суммы заказа не хватает {MIN_ORDER_SUM - order.sum}₽",
+            )
+            return
         if order.sum < FREE_DELIVERY_FROM:
             order.sum += DELIVERY_COST
             order.free_delivery = False
-            message_text.append(f"\nДоставка: {DELIVERY_COST}₽")
+            order.cart += f"\nДоставка: {DELIVERY_COST}₽"
+        message_text.append(
+            ITEM_CART_MESSAGE.format(
+                number=index + 1,
+                name=item.catalogue_item.name,
+                size=item.catalogue_item.volume
+                if item.catalogue_item.volume != "Безразмерный"
+                else " ",
+                price=item.catalogue_item.price,
+                quantity=item.quantity,
+                sum=item.sum,
+            )
+        )
         message_text = "\n".join(message_text)
         message_text += END_CART_MESSAGE.format(sum=order.sum)
+        if order.sum < FREE_DELIVERY_FROM:
+            message_text += (
+                f"Ещё {order.sum - FREE_DELIVERY_FROM}₽ и доставка будет бесплатной"
+            )
+        else:
+            message_text += "Поздравляем, вам доставка бесплатна!"
         order = api.create_order(order)
         for char in BANNED_CHARS:
             user.address.replace(char, "\\" + char)

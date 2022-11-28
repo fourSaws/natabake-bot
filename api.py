@@ -9,11 +9,11 @@ from models import User
 users = {}
 orders = {}
 
-server_url='http://127.0.0.1:8000'
+server_url = "http://127.0.0.1:8000"
+
+
 def get_cart(chat_id) -> list[CartItem]:
-    response = requests.get(
-        server_url+"/api/getCart", params={"chat_id": chat_id}
-    )
+    response = requests.get(server_url + "/api/getCart", params={"chat_id": chat_id})
     if response.status_code == 404:
         raise FileNotFoundError("Cart is empty")
     cart = []
@@ -30,7 +30,7 @@ def get_cart(chat_id) -> list[CartItem]:
 
 
 def get_brands(category_id: int = None) -> list[Brand]:
-    response = requests.get(server_url+"/api/getBrands")
+    response = requests.get(server_url + "/api/getBrands")
     if response.status_code == 200:
         if not category_id:
             return sorted(
@@ -53,7 +53,7 @@ def get_brands(category_id: int = None) -> list[Brand]:
 
 
 def get_categories() -> list[Category]:
-    response = requests.get(server_url+"/api/getCategory")
+    response = requests.get(server_url + "/api/getCategory")
     return sorted(
         [Category(category["id"], category["name"]) for category in response.json()],
         key=lambda category: category.name,
@@ -61,7 +61,7 @@ def get_categories() -> list[Category]:
 
 
 def get_products(
-        id: int = None, name: str = None, category_id: int = None, brand_id: int = None
+    id: int = None, name: str = None, category_id: int = None, brand_id: int = None
 ) -> list[Product]:
     payload = {}
     if id:
@@ -72,7 +72,7 @@ def get_products(
         payload["category"] = category_id
     if brand_id:
         payload["brand"] = brand_id
-    response = requests.get(server_url+"/api/getProducts", params=payload)
+    response = requests.get(server_url + "/api/getProducts", params=payload)
     if not response.json():
         return []
     else:
@@ -93,23 +93,25 @@ def get_products(
 
 
 def get_photo(url: str) -> BinaryIO:
-    return urlopen(server_url+"/media/" + url).read()
+    return urlopen(server_url + "/media/" + url).read()
 
 
 def add_to_cart(chat_id: int, product_id: int) -> bool:
     response = requests.get(
-        server_url+"/api/addToCart",
+        server_url + "/api/addToCart",
         params={"id": product_id, "chat_id": chat_id},
     )
     if response.status_code != 200:
-        logging.error(f"addToCart returned code {response.status_code}. Url was {response.url}")
+        logging.error(
+            f"addToCart returned code {response.status_code}. Url was {response.url}"
+        )
         return False
     return True
 
 
 def edit_cart(cart_id: int, chat_id: int, quantity: int) -> CartItem:
     response = requests.get(
-        server_url+"/api/editCart",
+        server_url + "/api/editCart",
         params={"product_id": cart_id, "chat_id": chat_id, "quantity": quantity},
     )
     if response.status_code != 200:
@@ -137,29 +139,37 @@ def edit_cart(cart_id: int, chat_id: int, quantity: int) -> CartItem:
 
 def create_user(user: User) -> User:
     response = requests.get(
-        server_url+"/api/createUser",
-        params={"chat_id": user.chat_id, "phone_number": user.phone_number, "address": user.address,
-                "comment": user.comment},
+        server_url + "/api/createUser",
+        params={
+            "chat_id": user.chat_id,
+            "phone_number": user.phone_number,
+            "address": user.address,
+            "comment": user.comment,
+        },
     )
     json = response.json()[0]
-    return User(chat_id=int(json['chat_id']),
-                phone_number=json['phone_number'],
-                address=json['address'],
-                comment=json['comment'])
+    return User(
+        chat_id=int(json["chat_id"]),
+        phone_number=json["phone_number"],
+        address=json["address"],
+        comment=json["comment"],
+    )
 
 
 def get_user(chat_id: int) -> User | bool:
     response = requests.get(
-        server_url+"/api/getUser",
+        server_url + "/api/getUser",
         params={"chat_id": chat_id},
     )
     json = response.json()
     if json:
-        json=json[0]
-        return User(chat_id=int(json['chat_id']),
-                    phone_number=json['phone_number'],
-                    address=json['address'],
-                    comment=json['comment'])
+        json = json[0]
+        return User(
+            chat_id=int(json["chat_id"]),
+            phone_number=json["phone_number"],
+            address=json["address"],
+            comment=json["comment"],
+        )
     return False
 
 
@@ -190,4 +200,4 @@ def get_orders(chat_id: int) -> list[Order]:
 
 
 def clear_cart(chat_id: int):
-    requests.get(server_url+"/api/clearCart", params={"chat_id": chat_id})
+    requests.get(server_url + "/api/clearCart", params={"chat_id": chat_id})

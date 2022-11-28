@@ -22,7 +22,7 @@ def get_inline_keyboard_page(
     pagination_callback: str,
     rows=9,
     back_to="menu",
-    add_to_pagination=''
+    add_to_pagination="",
 ):
     if rows > 9:
         raise ValueError(
@@ -40,7 +40,8 @@ def get_inline_keyboard_page(
     if page > 1:
         btns.append(
             types.InlineKeyboardButton(
-                "<=", callback_data=pagination_callback + str(page - 1)+add_to_pagination
+                "<=",
+                callback_data=pagination_callback + str(page - 1) + add_to_pagination,
             )
         )
     if len(items) > columns * rows:
@@ -57,7 +58,8 @@ def get_inline_keyboard_page(
     if ends_on < len(items):
         btns.append(
             types.InlineKeyboardButton(
-                "=>", callback_data=pagination_callback + str(page + 1)+add_to_pagination
+                "=>",
+                callback_data=pagination_callback + str(page + 1) + add_to_pagination,
             )
         )
     keyboard.append(btns)
@@ -115,13 +117,13 @@ def keyboard_for_product(
 ) -> types.InlineKeyboardMarkup:
     other = api.get_products(name=product.name, brand_id=product.brand)
     for i in other:
-        i.photo_url=''
-    buffer=product.photo_url
-    product.photo_url=''
+        i.photo_url = ""
+    buffer = product.photo_url
+    product.photo_url = ""
     keyboard = []
     if len(other) > 1:
         other.remove(product)
-    product.photo_url=buffer
+    product.photo_url = buffer
     for prod in other:
         if prod.id != product.id:
             logging.info(f"found different {prod=} {product=}")
@@ -145,7 +147,7 @@ def keyboard_for_product(
     return types.InlineKeyboardMarkup(keyboard)
 
 
-def order_paid(order_id: int, chat_id: int, notify: tuple[int]):
+def order_paid(order_id: int, chat_id: int, notify: Tuple[int, ...]):
     user = api.get_user(chat_id)
     order = api.get_order(order_id)
     if order.status not in (models.Status.CASH, models.Status.PAID):
@@ -166,7 +168,7 @@ def order_paid(order_id: int, chat_id: int, notify: tuple[int]):
     bot = telebot.TeleBot(token=environ.get("notification_token"))
     for chat in notify:
         try:
-            bot.send_message(chat, notification_text,parse_mode='MarkdownV2')
+            bot.send_message(chat, notification_text, parse_mode="MarkdownV2")
         except telebot.apihelper.ApiTelegramException as exc:
             logger.error(f"Unable to notify {chat}", exc_info=exc)
     api.clear_cart(order.client)

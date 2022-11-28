@@ -43,7 +43,7 @@ class Product:
             try:
                 photo = api.get_photo(self.photo_url)
             except Exception as exc:
-                logger.error('Unable to get photo',exc)
+                logger.error("Unable to get photo", exc)
                 photo = open("no_image.jpg", "rb")
         else:
             photo = open("no_image.jpg", "rb")
