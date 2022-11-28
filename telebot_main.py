@@ -589,19 +589,19 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                 brand_name = item.catalogue_item.get_brand_name().replace(
                     char, "\\" + char
                 )
-                message_text.append(
-                    ITEM_CART_MESSAGE.format(
-                        number=index + 1,
-                        name=item.catalogue_item.name,
-                        size=item.catalogue_item.volume
-                        if item.catalogue_item.volume != "Безразмерный"
-                        else " ",
-                        price=item.catalogue_item.price,
-                        quantity=item.quantity,
-                        sum=item.sum,
-                    )
+            message_text.append(
+                ITEM_CART_MESSAGE.format(
+                    number=index + 1,
+                    name=item.catalogue_item.name,
+                    size=item.catalogue_item.volume
+                    if item.catalogue_item.volume != "Безразмерный"
+                    else " ",
+                    price=item.catalogue_item.price,
+                    quantity=item.quantity,
+                    sum=item.sum,
                 )
-                order.sum += item.sum
+            )
+            order.sum += item.sum
 
         if order.sum < MIN_ORDER_SUM:
             bot.send_message(
