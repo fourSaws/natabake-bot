@@ -618,13 +618,13 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
             message_text.append(f"\nДоставка\\: *{DELIVERY_COST}*₽\n")
 
         message_text = "\n".join(message_text)
-        message_text += END_CART_MESSAGE.format(sum=order.sum)
+        message_text += '\n'+END_CART_MESSAGE.format(sum=order.sum)
         if order.sum < FREE_DELIVERY_FROM:
             message_text += (
                 f"\n\n*Ещё {FREE_DELIVERY_FROM - order.sum+DELIVERY_COST}₽ и доставка будет бесплатной*"
             )
         else:
-            message_text += "Поздравляем, вам доставка бесплатна\\!"
+            message_text += "\nПоздравляем, вам доставка бесплатна\\!"
         order = api.create_order(order)
         for char in BANNED_CHARS:
             user.address.replace(char, "\\" + char)
