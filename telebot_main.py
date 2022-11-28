@@ -155,9 +155,17 @@ def products_by_brand(data: types.CallbackQuery):
     logger.info(f"{data.message.chat.id} came with {data.data}")
     dat, back_to = data.data.split(";")
     brand_id = int(dat.split("&")[1])
+    category_id=int(back_to.split("&")[1])
     page = int(dat.split("&")[2])
-    products = api.get_products(brand_id=brand_id)
-    keyboard_buttons = tuple(
+    products_ = api.get_products(brand_id=brand_id, category_id=category_id)
+    names=set()
+    products=[]
+    for product in products_:
+        if product.name not in names:
+            names.add(product.name)
+            products.append(product)
+    products.sort(key=lambda prod:prod.name)
+    keyboard_buttons = list(
         types.InlineKeyboardButton(
             product.name, callback_data=f"product&{product.id}*{data.data}"
         )
@@ -577,7 +585,8 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                 item.catalogue_item.volume = item.catalogue_item.volume.replace(
                     char, "\\" + char
                 )
-            order.cart += f"{index + 1}\\) _{item.catalogue_item.name}_ {'__' + item.catalogue_item.volume + '__' if item.catalogue_item.volume != 'Безразмерный' else ''} {item.quantity}шт⋅{item.catalogue_item.price}₽ \\= *{item.sum}₽*\n "
+                brand_name=item.catalogue_item.get_brand_name().replace(char,'\\'+char)
+            order.cart += f"{index + 1}\\)*{brand_name}*  _{item.catalogue_item.name}_ {'__' + item.catalogue_item.volume + '__' if item.catalogue_item.volume != 'Безразмерный' else ''} {item.quantity}шт⋅{item.catalogue_item.price}₽ \\= *{item.sum}₽*\n "
             order.sum += item.sum
             message_text.append(
                 ITEM_CART_MESSAGE.format(
