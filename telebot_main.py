@@ -602,7 +602,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
         if order.sum < FREE_DELIVERY_FROM:
             order.sum += DELIVERY_COST
             order.free_delivery = False
-            order.cart += f"\nДоставка: {DELIVERY_COST}₽"
+            order.cart += f"\nДоставка\\: *{DELIVERY_COST}*₽"
         message_text.append(
             ITEM_CART_MESSAGE.format(
                 number=index + 1,
