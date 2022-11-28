@@ -601,7 +601,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                     sum=item.sum,
                 )
             )
-            order.cart += message_text[-1]
+            order.cart += message_text[-1]+'\n'
             order.sum += item.sum
 
         if order.sum < MIN_ORDER_SUM:
