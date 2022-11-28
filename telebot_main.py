@@ -621,7 +621,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
         message_text += END_CART_MESSAGE.format(sum=order.sum)
         if order.sum < FREE_DELIVERY_FROM:
             message_text += (
-                f"\n\n*Ещё {FREE_DELIVERY_FROM - order.sum-DELIVERY_COST}₽ и доставка будет бесплатной*"
+                f"\n\n*Ещё {FREE_DELIVERY_FROM - order.sum+DELIVERY_COST}₽ и доставка будет бесплатной*"
             )
         else:
             message_text += "Поздравляем, вам доставка бесплатна\\!"
