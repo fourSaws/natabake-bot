@@ -597,6 +597,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                 data.message.chat.id,
                 f"До минимальной суммы заказа не хватает {MIN_ORDER_SUM - order.sum}₽",
             )
+            menu(data.message)
             return
         if order.sum < FREE_DELIVERY_FROM:
             order.sum += DELIVERY_COST
