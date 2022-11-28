@@ -601,6 +601,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                     sum=item.sum,
                 )
             )
+            order.cart += message_text[-1]
             order.sum += item.sum
 
         if order.sum < MIN_ORDER_SUM:
@@ -620,7 +621,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
         message_text += END_CART_MESSAGE.format(sum=order.sum)
         if order.sum < FREE_DELIVERY_FROM:
             message_text += (
-                f"\nЕщё {FREE_DELIVERY_FROM-order.sum}₽ и доставка будет бесплатной\n"
+                f"\n\n*Ещё {FREE_DELIVERY_FROM - order.sum}₽ и доставка будет бесплатной*"
             )
         else:
             message_text += "Поздравляем, вам доставка бесплатна\\!"
@@ -699,9 +700,9 @@ def register(message: types.Message):
 
 
 def begin_phone_number(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     keyboard = types.ReplyKeyboardMarkup()
     keyboard.add(types.KeyboardButton(REGISTRATION_PHONE_BUTTON, request_contact=True))
@@ -713,14 +714,14 @@ def begin_phone_number(
 
 
 def phone_number_enter(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[
-        [
-            types.Message,
-        ],
-        typing.Any,
-    ] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[
+            [
+                types.Message,
+            ],
+            typing.Any,
+        ] = None,
 ):
     logger.info(f"{msg.chat.id} came")
     try:
@@ -743,9 +744,9 @@ def phone_number_enter(
 
 
 def begin_address(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     user = api.get_user(msg.chat.id)
     user.address = ""
@@ -761,9 +762,9 @@ def begin_address(
 
 
 def street_enter(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
@@ -776,9 +777,9 @@ def street_enter(
 
 
 def house_enter(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
@@ -791,9 +792,9 @@ def house_enter(
 
 
 def entrance_enter(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
@@ -806,9 +807,9 @@ def entrance_enter(
 
 
 def floor_enter(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
@@ -821,9 +822,9 @@ def floor_enter(
 
 
 def apartment_enter(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
@@ -836,7 +837,7 @@ def apartment_enter(
 
 
 def begin_comment(
-    msg: types.Message, on_complete: typing.Callable[[types.Message], typing.Any] = None
+        msg: types.Message, on_complete: typing.Callable[[types.Message], typing.Any] = None
 ):
     logger.info(f"{msg.chat.id} came")
     bot.send_message(msg.chat.id, REGISTRATION_COMMENT_MESSAGE)
@@ -846,7 +847,7 @@ def begin_comment(
 
 
 def comment_enter(
-    msg: types.Message, on_complete: typing.Callable[[types.Message], typing.Any] = None
+        msg: types.Message, on_complete: typing.Callable[[types.Message], typing.Any] = None
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
