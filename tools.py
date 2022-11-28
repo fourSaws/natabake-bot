@@ -159,6 +159,7 @@ def order_paid(order_id: int, chat_id: int, notify: Tuple[int, ...]):
     notification_text = f"""
 *Новый заказ*
 {order.cart}
+*Итого: {order.sum}₽*
 Телефон: \\{user.phone_number}
 Адрес:
 \t\t{order.address}
