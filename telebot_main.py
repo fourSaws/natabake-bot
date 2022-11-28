@@ -591,13 +591,6 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                 )
             order.cart += f"{index + 1}\\)*{brand_name}*  _{item.catalogue_item.name}_ {'__' + item.catalogue_item.volume + '__' if item.catalogue_item.volume != 'Безразмерный' else ''} {item.quantity}шт⋅{item.catalogue_item.price}₽ \\= *{item.sum}₽*\n "
             order.sum += item.sum
-        else:
-            bot.send_message(
-                data.chat.id,
-                f"До минимальной суммы заказа не хватает {MIN_ORDER_SUM}₽",
-            )
-            menu(data.message)
-            return None
 
         if order.sum < MIN_ORDER_SUM:
             bot.send_message(
