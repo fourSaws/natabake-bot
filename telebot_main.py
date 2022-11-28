@@ -594,7 +594,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
 
         if order.sum < MIN_ORDER_SUM:
             bot.send_message(
-                data.chat.id,
+                data.message.chat.id,
                 f"До минимальной суммы заказа не хватает {MIN_ORDER_SUM - order.sum}₽",
             )
             return
