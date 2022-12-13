@@ -20,7 +20,8 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - [%(levelname)s] -  (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s",
 )
-NOTIFICATION_CHATS = (354640082, 847709370, -1001743990374)
+with open('chats.txt') as file:
+    NOTIFICATION_CHATS = [int(i[:-1]) for i in file.readlines()]
 BANNED_CHARS = (
     "_",
     "*",
@@ -320,11 +321,15 @@ def get_cart(msg: types.Message, edit=False):
     else:
         sum_ = 0
         for index, item in enumerate(cart_list):
+            brand_name = item.catalogue_item.get_brand_name()
             for char in BANNED_CHARS:
                 item.catalogue_item.name = item.catalogue_item.name.replace(
                     char, "\\" + char
                 )
                 item.catalogue_item.volume = item.catalogue_item.volume.replace(
+                    char, "\\" + char
+                )
+                brand_name = brand_name.replace(
                     char, "\\" + char
                 )
             cart_text.append(
@@ -337,6 +342,7 @@ def get_cart(msg: types.Message, edit=False):
                     price=item.catalogue_item.price,
                     quantity=item.quantity,
                     sum=item.sum,
+                    brand=brand_name
                 )
             )
             sum_ += item.sum
@@ -407,6 +413,7 @@ def edit_cart(data: types.CallbackQuery, answer=True):
                 callback_data=item.catalogue_item.id,
             )
         )
+        brand_name = item.catalogue_item.get_brand_name()
         for char in BANNED_CHARS:
             item.catalogue_item.name = item.catalogue_item.name.replace(
                 char, "\\" + char
@@ -414,6 +421,9 @@ def edit_cart(data: types.CallbackQuery, answer=True):
             item.catalogue_item.volume = item.catalogue_item.volume.replace(
                 char, "\\" + char
             )
+            brand_name = brand_name.replace(
+                    char, "\\" + char
+                )
         cart_text.append(
             ITEM_CART_MESSAGE.format(
                 number=index + 1,
@@ -424,6 +434,7 @@ def edit_cart(data: types.CallbackQuery, answer=True):
                 price=item.catalogue_item.price,
                 quantity=item.quantity,
                 sum=item.sum,
+                brand=brand_name
             )
         )
         sum_ += item.sum
@@ -582,6 +593,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
             message.chat.id, "", 0, user.address, models.Status.IN_CART, user.comment
         )
         for index, item in enumerate(cart_list):
+            brand_name = item.catalogue_item.get_brand_name()
             for char in BANNED_CHARS:
                 item.catalogue_item.name = item.catalogue_item.name.replace(
                     char, "\\" + char
@@ -589,7 +601,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                 item.catalogue_item.volume = item.catalogue_item.volume.replace(
                     char, "\\" + char
                 )
-                brand_name = item.catalogue_item.get_brand_name().replace(
+                brand_name = brand_name.replace(
                     char, "\\" + char
                 )
             message_text.append(
@@ -602,6 +614,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                     price=item.catalogue_item.price,
                     quantity=item.quantity,
                     sum=item.sum,
+                    brand=brand_name
                 )
             )
             order.cart += ITEM_CART_MESSAGE.format(
@@ -613,6 +626,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                 price=item.catalogue_item.price,
                 quantity=item.quantity,
                 sum=item.sum,
+                brand=brand_name
             ) + '\n'
             order.sum += item.sum
 

@@ -156,14 +156,15 @@ def order_paid(order_id: int, chat_id: int, notify: Tuple[int, ...], username: s
         raise ValueError("Order isn't paid")
     for char in BANNED_CHARS:
         order.address = order.address.replace(char, "\\" + char)
-        username = username.replace(char, "\\" + char)
+        if username:
+            username=username.replace(char, "\\" + char)
         # order.cart=order.cart.replace(char, "\\" + char)
     order.address = order.address.replace("\n", "\n\t\t")
     notification_text = f"""
 *Новый заказ*
 {order.cart}
 *Итого: {order.sum}₽*
-Телефон: \\{user.phone_number} \\(@{username}\\)
+Телефон: \\{user.phone_number} \\({"@"+username if username else "No nickname"}\\)
 Адрес:
 \t\t{order.address}
     

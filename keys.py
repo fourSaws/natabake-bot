@@ -44,7 +44,7 @@ CHANGE_QUANTITY_BUTTON_ANSWER = "В корзине {quantity}шт"
 # С МАРКДАУНОМ
 EMPTY_CART_MESSAGE = "Корзина пуста"
 FIRST_CART_MESSAGE = "В корзине:"
-ITEM_CART_MESSAGE = "{number}\\) _{name}_ __{size}__ {quantity}шт⋅{price}₽ \\= *{sum}₽*"
+ITEM_CART_MESSAGE = "{number}\\) *{brand}* _{name}_ __{size}__ {quantity}шт⋅{price}₽ \\= *{sum}₽*"
 END_CART_MESSAGE = "Итого: {sum}"
 # КОНЕЦ С МАРКДАУНОМ
 ADD_TO_CART_BUTTON = "В корзину"
