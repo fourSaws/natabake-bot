@@ -52,6 +52,8 @@ ADD_TO_CART_BUTTON = "В корзину"
 ADD_TO_CART_BUTTON_ANSWER = "{product_name} в корзине"
 DELETED_FROM_CART_BUTTON_ANSWER = "Удалено из корзины"
 
+ORDER_PAY_WITH_CARD="Для оплаты перейдите по ссылке"
+
 ORDER_COMPLETE_BUTTON_ANSWER = "Заказ отправлен"
 ORDER_COMPLETE_MESSAGE = "Спасибо за заказ, мы свяжемся с вами для подтверждения"
 
