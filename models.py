@@ -119,3 +119,16 @@ class Order:
     comment: str
     id: int = None
     free_delivery: bool = True
+
+    @classmethod
+    def from_json(cls, js):
+        return cls(
+            client=js['client_id'],
+            cart=js['cart'],
+            sum=js['sum'],
+            address=js['address'],
+            status=js['status'],
+            comment=js['comment'],
+            id=js['id'],
+            free_delivery=js['free_delivery'],
+        )

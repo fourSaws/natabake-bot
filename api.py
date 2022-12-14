@@ -174,30 +174,47 @@ def get_user(chat_id: int) -> User | bool:
 
 
 def create_order(order: Order) -> Order:
-    global orders
-    while (id_ := randint(0, 100)) in orders:
-        pass
-    order.id = id_
-    orders[order.id] = order
-    return orders[order.id]
+    requests.get(server_url+'api/createOrder',params={
+        "chat_id":order.client,
+        "cart":order.cart,
+        "free_delivery":order.free_delivery,
+        "sum":order.sum,
+        "address":order.address,
+        "status":order.status,
+        "comment":order.comment,
+    })
+    return order
 
 
-def change_status(order_id: int, status: Status) -> Order:
-    global orders
-    order = orders[order_id]
-    order.status = status
-    orders[order_id] = order
-    return orders[order_id]
+def change_status(order_id: int, status: Status) -> bool:
+    a=requests.get(server_url+'api/changeStatus',params={
+        "order_id":order_id,
+        "new_status":status.name
+    })
+    return a.status_code==200
 
 
 def get_order(order_id: int) -> Order:
-    global orders
-    return orders[order_id]
-
+    response = requests.get(
+        server_url + "/api/getOrder",
+        params={
+            "order_id":order_id
+        },
+    )
+    if response.status_code==200:
+        data=response.json()[0]
+        return Order.from_json(data)
 
 def get_orders(chat_id: int) -> list[Order]:
-    raise NotImplementedError
-
+    response = requests.get(
+        server_url + "/api/getOrders",
+        params={
+            "chat_id": chat_id
+        },
+    )
+    if response.status_code == 200:
+        data = response.json()
+        return [Order.from_json(i) for i in data]
 
 def clear_cart(chat_id: int):
     requests.get(server_url + "/api/clearCart", params={"chat_id": chat_id})
