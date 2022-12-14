@@ -183,7 +183,8 @@ def get_payment_link(msg: telebot.types.Message, order: models.Order):
     bill_data = {
         "amount": {
             "currency": "RUB",
-            "value": f"{order.sum:.2f}"
+            #"value": f"{order.sum:.2f}"
+            "value":"1.00"
         },
         "comment": f"Заказ №{order.id}",
         "expirationDateTime": (datetime.datetime.now()+datetime.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S+03:00"),
