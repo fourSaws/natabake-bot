@@ -2,7 +2,7 @@ from typing import BinaryIO
 from urllib.request import urlopen
 from random import randint
 import requests
-
+import logging
 from models import *
 from models import User
 
@@ -10,8 +10,18 @@ users = {}
 orders = {}
 
 server_url = "http://127.0.0.1:8000"
+logger = logging.getLogger(__name__)
 
+def log_event(func):
+    def wrapper(*args, **kwargs):
+        logger.info(f"AGRS: {args}",stacklevel=2)
+        result = func(*args, **kwargs)
+        if func.__name__!='get_photo':
+            logger.info(f"RESPONSE:{result if type(result) is not list or type(result) is not BinaryIO else f'list({len(result)} items)'}",stacklevel=2)
+        return result
+    return wrapper
 
+@log_event
 def get_cart(chat_id) -> list[CartItem]:
     response = requests.get(server_url + "/api/getCart", params={"chat_id": chat_id})
     if response.status_code == 404:
@@ -26,9 +36,10 @@ def get_cart(chat_id) -> list[CartItem]:
                 catalogue_item=get_products(id=i["product_id"])[0],
             )
         )
+    logger.info(f'{cart=}')
     return cart
 
-
+@log_event
 def get_brands(category_id: int = None) -> list[Brand]:
     response = requests.get(server_url + "/api/getBrands")
     if response.status_code == 200:
@@ -51,7 +62,7 @@ def get_brands(category_id: int = None) -> list[Brand]:
     else:
         logging.error(f"getBrands returned code {response.status_code}")
 
-
+@log_event
 def get_categories() -> list[Category]:
     response = requests.get(server_url + "/api/getCategory")
     return sorted(
@@ -59,7 +70,7 @@ def get_categories() -> list[Category]:
         key=lambda category: category.name,
     )
 
-
+@log_event
 def get_products(
     id: int = None, name: str = None, category_id: int = None, brand_id: int = None
 ) -> list[Product]:
@@ -91,11 +102,11 @@ def get_products(
     ]
     return products
 
-
+@log_event
 def get_photo(url: str) -> BinaryIO:
     return urlopen(server_url + "/media/" + url).read()
 
-
+@log_event
 def add_to_cart(chat_id: int, product_id: int) -> bool:
     response = requests.get(
         server_url + "/api/addToCart",
@@ -108,7 +119,7 @@ def add_to_cart(chat_id: int, product_id: int) -> bool:
         return False
     return True
 
-
+@log_event
 def edit_cart(cart_id: int, chat_id: int, quantity: int) -> CartItem:
     response = requests.get(
         server_url + "/api/editCart",
@@ -136,7 +147,7 @@ def edit_cart(cart_id: int, chat_id: int, quantity: int) -> CartItem:
         cart_id,
     )
 
-
+@log_event
 def create_user(user: User) -> User:
     response = requests.get(
         server_url + "/api/createUser",
@@ -155,7 +166,7 @@ def create_user(user: User) -> User:
         comment=json["comment"],
     )
 
-
+@log_event
 def get_user(chat_id: int) -> User | bool:
     response = requests.get(
         server_url + "/api/getUser",
@@ -172,7 +183,7 @@ def get_user(chat_id: int) -> User | bool:
         )
     return False
 
-
+@log_event
 def create_order(order: Order) -> Order:
     data=requests.get(server_url+'/api/createOrder',params={
         "chat_id":order.client,
@@ -183,10 +194,11 @@ def create_order(order: Order) -> Order:
         "status":order.status.name,
         "comment":order.comment,
     })
+    print(data.url)
+    print(data.json())
+    return Order.from_json(data.json()[0])
 
-    return Order.from_json(data.json())
-
-
+@log_event
 def change_status(order_id: int, status: Status) -> bool:
     a=requests.get(server_url+'/api/changeStatus',params={
         "order_id":order_id,
@@ -194,7 +206,7 @@ def change_status(order_id: int, status: Status) -> bool:
     })
     return a.status_code==200
 
-
+@log_event
 def get_order(order_id: int) -> Order:
     response = requests.get(
         server_url + "/api/getOrder",
@@ -204,8 +216,9 @@ def get_order(order_id: int) -> Order:
     )
     if response.status_code==200:
         data=response.json()[0]
-        return Order.from_json(data)
-
+        res=Order.from_json(data)
+        return res
+@log_event
 def get_orders(chat_id: int) -> list[Order]:
     response = requests.get(
         server_url + "/api/getOrders",
@@ -217,5 +230,6 @@ def get_orders(chat_id: int) -> list[Order]:
         data = response.json()
         return [Order.from_json(i) for i in data]
 
+@log_event
 def clear_cart(chat_id: int):
     requests.get(server_url + "/api/clearCart", params={"chat_id": chat_id})

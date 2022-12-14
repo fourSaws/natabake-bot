@@ -178,8 +178,8 @@ def order_paid(order_id: int, chat_id: int, notify: Tuple[int, ...], username: s
             logger.error(f"Unable to notify {chat}", exc_info=exc)
 
 
-def get_payment_link(msg: telebot.types.Message, order: models.Order):
-    user=api.get_user(msg.chat.id)
+def get_payment_link(tg_user: telebot.types.User, order: models.Order):
+    user=api.get_user(tg_user.id)
     bill_data = {
         "amount": {
             "currency": "RUB",
@@ -190,16 +190,16 @@ def get_payment_link(msg: telebot.types.Message, order: models.Order):
         "expirationDateTime": (datetime.datetime.now()+datetime.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S+03:00"),
         "customer": {
             "phone": user.phone_number,
-            "account": str(msg.chat.id)
+            "account": str(tg_user.id)
         },
         "customFields": {
-            "username": msg.from_user.username or msg.from_user.first_name,
+            "username": tg_user.username or tg_user.first_name,
         }
     }
     headers={'content-type': 'application/json','accept': 'application/json','Authorization': f'Bearer {environ.get("qiwi_secret")}'}
     response=requests.put(f'https://api.qiwi.com/partner/bill/v1/bills/{order.id}', headers=headers,json=bill_data)
     logger.info(f'{bill_data=}')
-    logger.error(f'Incorrect response from qiwi {response.status_code} {response.content.decode()}')
+    logger.info(f'Response from qiwi {response.status_code} {response.content.decode()}')
     if response.status_code!=200:
         logger.info(f'{bill_data=}')
         logger.error(f'Incorrect response from qiwi {response.status_code} {response.content.decode()}')

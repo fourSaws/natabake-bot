@@ -81,7 +81,7 @@ class User:
     comment: str
 
     def __setattr__(self, name, value):
-        logger.info(f"{name=} {value=}")
+        logger.debug(f"{name=} {value=}")
         if name == "phone_number":
             super().__setattr__(name, self.__validate_phone(value))
         else:

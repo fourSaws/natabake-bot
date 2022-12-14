@@ -902,7 +902,7 @@ def pay(data: types.CallbackQuery):
         )
     if method == "card":
         api.change_status(order_id, models.Status.WAITING_FOR_PAYMENT)
-        url=tools.get_payment_link(data.message, order)
+        url=tools.get_payment_link(data.from_user, order)
         bot.edit_message_text(ORDER_PAY_WITH_CARD, data.message.chat.id,data.message.message_id,reply_markup=quick_markup({"Оплатить":{"url":url}},1))
         bot.answer_callback_query(data.id, ORDER_PAY_WITH_CARD)
 
