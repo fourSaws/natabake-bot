@@ -198,6 +198,8 @@ def get_payment_link(msg: telebot.types.Message, order: models.Order):
     }
     headers={'content-type': 'application/json','accept': 'application/json','Authorization': f'Bearer {environ.get("qiwi_secret")}'}
     response=requests.put(f'https://api.qiwi.com/partner/bill/v1/bills/{order.id}', headers=headers,json=bill_data)
+    logger.info(f'{bill_data=}')
+    logger.error(f'Incorrect response from qiwi {response.status_code} {response.content.decode()}')
     if response.status_code!=200:
         logger.info(f'{bill_data=}')
         logger.error(f'Incorrect response from qiwi {response.status_code} {response.content.decode()}')
