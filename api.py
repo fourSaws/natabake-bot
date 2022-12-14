@@ -174,7 +174,7 @@ def get_user(chat_id: int) -> User | bool:
 
 
 def create_order(order: Order) -> Order:
-    requests.get(server_url+'api/createOrder',params={
+    requests.get(server_url+'/api/createOrder',params={
         "chat_id":order.client,
         "cart":order.cart,
         "free_delivery":order.free_delivery,
@@ -187,7 +187,7 @@ def create_order(order: Order) -> Order:
 
 
 def change_status(order_id: int, status: Status) -> bool:
-    a=requests.get(server_url+'api/changeStatus',params={
+    a=requests.get(server_url+'/api/changeStatus',params={
         "order_id":order_id,
         "new_status":status.name
     })
