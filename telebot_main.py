@@ -1,3 +1,8 @@
+import os
+import threading
+import time
+
+from dotenv import load_dotenv
 import logging
 import typing
 from datetime import datetime
@@ -7,16 +12,16 @@ from telebot.util import quick_markup
 from keys import *
 import api
 import models
-import secure
 import tools
 
 logging.basicConfig(
     filename=f"bot-from-{datetime.now().date()}.log",
-    filemode="w",
+    filemode="a",
     level=logging.INFO,
     format="%(asctime)s - [%(levelname)s] -  (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s",
 )
-
+with open('chats.txt') as file:
+    NOTIFICATION_CHATS = [int(i[:-1]) for i in file.readlines()]
 BANNED_CHARS = (
     "_",
     "*",
@@ -37,10 +42,12 @@ BANNED_CHARS = (
     ".",
     "!",
 )
-FREE_DELIVERY_FROM = 1200
+FREE_DELIVERY_FROM = 1500
 DELIVERY_COST = 150
-bot = TeleBot(token=secure.test_token)
+MIN_ORDER_SUM = 500
+bot = TeleBot(token=os.environ.get("teletoken"))
 logger = logging.getLogger(__name__)
+load_dotenv()
 
 
 @bot.message_handler(commands=["start"])
@@ -84,14 +91,7 @@ def menu(msg: types.Message, edit=False):
         cart = []
     structure = []
     structure.append(
-        [
-            types.InlineKeyboardButton(
-                MENU_BY_CATEGORY_BUTTON, callback_data="menu_by_cat&1"
-            ),
-            types.InlineKeyboardButton(
-                MENU_BY_BRAND_BUTTON, callback_data="menu_by_brand&1"
-            ),
-        ]
+        [types.InlineKeyboardButton(TO_CATALOGUE_BUTTON, callback_data="menu_by_cat&1")]
     )
     structure.append(
         [
@@ -117,9 +117,9 @@ def back(data: types.CallbackQuery):
         case "menu":
             bot.answer_callback_query(data.id, "Меню")
             menu(data.message, True)
-        case "menu_by_brand":
-            data.data = "&".join(data.data.split("&")[1:])
-            menu_by_brand(data)
+        # case "menu_by_brand":
+        #     data.data = "&".join(data.data.split("&")[1:])
+        #     menu_by_brand(data)
         case "menu_by_cat":
             data.data = "&".join(data.data.split("&")[1:])
             menu_by_category(data)
@@ -128,7 +128,7 @@ def back(data: types.CallbackQuery):
             products_by_brand(data)
         case "category":
             data.data = "&".join(data.data.split("&")[1:])
-            products_by_category(data)
+            brands_by_category(data)
         case "cart":
             data.data = "&".join(data.data.split("&")[1:])
             get_cart_by_callback(data)
@@ -136,34 +136,43 @@ def back(data: types.CallbackQuery):
             raise ValueError(f'Unresolved for {data.data.split("&")[1]}')
 
 
-@bot.callback_query_handler(func=lambda data: data.data.startswith("menu_by_brand"))
-def menu_by_brand(data: types.CallbackQuery):
-    logger.info(f"{data.message.chat.id} came with {data.data}")
-    brands = tuple(
-        types.InlineKeyboardButton(brand.name, callback_data=f"brand&{brand.id}&1")
-        for brand in api.get_brands()
-    )
-    keyboard = tools.get_inline_keyboard_page(
-        brands, int(data.data.split("&")[1]), 2, "menu_by_brand&"
-    )
-    bot.answer_callback_query(data.id, BRAND_SUBMENU_BUTTON_ANSWER)
-    bot.edit_message_text(
-        BRAND_SUBMENU_MESSAGE,
-        data.message.chat.id,
-        data.message.message_id,
-        reply_markup=keyboard,
-    )
+# @bot.callback_query_handler(func=lambda data: data.data.startswith("menu_by_brand"))
+# def menu_by_brand(data: types.CallbackQuery):
+#     logger.info(f"{data.message.chat.id} came with {data.data}")
+#     brands = tuple(
+#         types.InlineKeyboardButton(brand.name, callback_data=f"brand&{brand.id}&1")
+#         for brand in api.get_brands()
+#     )
+#     keyboard = tools.get_inline_keyboard_page(
+#         brands, int(data.data.split("&")[1]), 2, "menu_by_brand&"
+#     )
+#     bot.answer_callback_query(data.id, BRAND_SUBMENU_BUTTON_ANSWER)
+#     bot.edit_message_text(
+#         BRAND_SUBMENU_MESSAGE,
+#         data.message.chat.id,
+#         data.message.message_id,
+#         reply_markup=keyboard,
+#     )
 
 
 @bot.callback_query_handler(func=lambda data: data.data.startswith("brand"))
 def products_by_brand(data: types.CallbackQuery):
     logger.info(f"{data.message.chat.id} came with {data.data}")
-    brand_id = int(data.data.split("&")[1])
-    page = int(data.data.split("&")[2])
-    products = api.get_products(brand_id=brand_id)
-    keyboard_buttons = tuple(
+    dat, back_to = data.data.split(";")
+    brand_id = int(dat.split("&")[1])
+    category_id = int(back_to.split("&")[1])
+    page = int(dat.split("&")[2])
+    products_ = api.get_products(brand_id=brand_id, category_id=category_id)
+    names = set()
+    products = []
+    for product in products_:
+        if product.name not in names:
+            names.add(product.name)
+            products.append(product)
+    products.sort(key=lambda prod: prod.name)
+    keyboard_buttons = list(
         types.InlineKeyboardButton(
-            product.name, callback_data=f"product&{product.id};{data.data}"
+            product.name, callback_data=f"product&{product.id}*{data.data}"
         )
         for product in products
     )
@@ -172,12 +181,13 @@ def products_by_brand(data: types.CallbackQuery):
         page,
         2,
         pagination_callback=f"brand&{brand_id}&",
-        back_to="menu_by_brand&1",
+        back_to=back_to,
+        add_to_pagination=";" + back_to,
     )
     bot.answer_callback_query(data.id, BRAND_SUBMENU_BUTTON_ANSWER)
     try:
         bot.edit_message_text(
-            BRAND_SUBMENU_MESSAGE,
+            PRODUCTS_BY_CATEGORY_MESSAGE,
             data.message.chat.id,
             data.message.message_id,
             reply_markup=keyboard,
@@ -190,7 +200,7 @@ def products_by_brand(data: types.CallbackQuery):
         except telebot.apihelper.ApiTelegramException:
             pass
         bot.send_message(
-            data.message.chat.id, BRAND_SUBMENU_MESSAGE, reply_markup=keyboard
+            data.message.chat.id, PRODUCTS_BY_CATEGORY_MESSAGE, reply_markup=keyboard
         )
 
 
@@ -216,16 +226,16 @@ def menu_by_category(data: types.CallbackQuery):
 
 
 @bot.callback_query_handler(func=lambda data: data.data.startswith("category"))
-def products_by_category(data: types.CallbackQuery):
+def brands_by_category(data: types.CallbackQuery):
     logger.info(f"{data.message.chat.id} came with {data.data}")
     category_id = int(data.data.split("&")[1])
     page = int(data.data.split("&")[2]) if len(data.data.split("&")) == 3 else 1
-    products = api.get_products(category_id=category_id)
+    brands = api.get_brands(category_id=category_id)
     keyboard_buttons = tuple(
         types.InlineKeyboardButton(
-            product.name, callback_data=f"product&{product.id};{data.data}"
+            brand.name, callback_data=f"brand&{brand.id}&1;{data.data}"
         )
-        for product in products
+        for brand in brands
     )
     keyboard = tools.get_inline_keyboard_page(
         keyboard_buttons,
@@ -237,7 +247,7 @@ def products_by_category(data: types.CallbackQuery):
     bot.answer_callback_query(data.id, PRODUCTS_BY_CATEGORY_BUTTON_ANSWER)
     try:
         bot.edit_message_text(
-            PRODUCTS_BY_CATEGORY_MESSAGE,
+            BRAND_SUBMENU_MESSAGE,
             data.message.chat.id,
             data.message.message_id,
             reply_markup=keyboard,
@@ -249,7 +259,7 @@ def products_by_category(data: types.CallbackQuery):
         except telebot.apihelper.ApiTelegramException:
             pass
         bot.send_message(
-            data.message.chat.id, PRODUCTS_BY_CATEGORY_MESSAGE, reply_markup=keyboard
+            data.message.chat.id, BRAND_SUBMENU_MESSAGE, reply_markup=keyboard
         )
 
 
@@ -259,10 +269,9 @@ def products_by_category(data: types.CallbackQuery):
 @bot.callback_query_handler(func=lambda data: data.data.startswith("product"))
 def product_card(data: types.CallbackQuery):
     logger.info(f"{data.message.chat.id} came with {data.data}")
-    direct_data, from_data = data.data.split(";")
-    try:
-        product = api.get_products(id=int(direct_data.split("&")[1]))[0]
-    except FileNotFoundError:
+    direct_data, from_data = data.data.split("*")
+    product = api.get_products(id=int(direct_data.split("&")[1]))[0]
+    if not product:
         bot.edit_message_text(
             PRODUCT_NOT_FOUND_MESSAGE,
             data.message.chat.id,
@@ -279,12 +288,15 @@ def product_card(data: types.CallbackQuery):
         product.volume = product.volume.replace(char, "\\" + char)
     text = PRODUCT_CARD.format(price=product.price, brand=brand, name=product.name)
     if product.volume != "Безразмерный":
-        text +=PRODUCT_CARD_SIZE.format(size=product.volume)
+        text += PRODUCT_CARD_SIZE.format(size=product.volume)
     keyboard = tools.keyboard_for_product(
         chat_id=data.message.chat.id, product=product, from_data=from_data
     )
     photo = product.get_photo()
-    bot.delete_message(data.message.chat.id, data.message.message_id)
+    try:
+        bot.delete_message(data.message.chat.id, data.message.message_id)
+    except telebot.apihelper.ApiTelegramException:
+        pass
     bot.send_photo(
         data.message.chat.id, photo, text, "MarkdownV2", reply_markup=keyboard
     )
@@ -309,6 +321,7 @@ def get_cart(msg: types.Message, edit=False):
     else:
         sum_ = 0
         for index, item in enumerate(cart_list):
+            brand_name = item.catalogue_item.get_brand_name()
             for char in BANNED_CHARS:
                 item.catalogue_item.name = item.catalogue_item.name.replace(
                     char, "\\" + char
@@ -316,9 +329,12 @@ def get_cart(msg: types.Message, edit=False):
                 item.catalogue_item.volume = item.catalogue_item.volume.replace(
                     char, "\\" + char
                 )
+                brand_name = brand_name.replace(
+                    char, "\\" + char
+                )
             cart_text.append(
                 ITEM_CART_MESSAGE.format(
-                    number=index+1,
+                    number=index + 1,
                     name=item.catalogue_item.name,
                     size=item.catalogue_item.volume
                     if item.catalogue_item.volume != "Безразмерный"
@@ -326,12 +342,12 @@ def get_cart(msg: types.Message, edit=False):
                     price=item.catalogue_item.price,
                     quantity=item.quantity,
                     sum=item.sum,
+                    brand=brand_name
                 )
             )
             sum_ += item.sum
         cart_text.append(END_CART_MESSAGE.format(sum=sum_))
         cart_text = "\n".join(cart_text)
-        print(cart_text)
         keyboard = types.InlineKeyboardMarkup()
         keyboard.add(
             types.InlineKeyboardButton(EDIT_CART_BUTTON, callback_data="edit_cart")
@@ -348,13 +364,22 @@ def get_cart(msg: types.Message, edit=False):
             msg.chat.id, cart_text, reply_markup=keyboard, parse_mode="MarkdownV2"
         )
     else:
-        bot.edit_message_text(
-            cart_text,
-            msg.chat.id,
-            msg.message_id,
-            reply_markup=keyboard,
-            parse_mode="MarkdownV2",
-        )
+        try:
+            bot.edit_message_text(
+                cart_text,
+                msg.chat.id,
+                msg.message_id,
+                reply_markup=keyboard,
+                parse_mode="MarkdownV2",
+            )
+        except telebot.apihelper.ApiTelegramException:
+            try:
+                bot.delete_message(msg.chat.id, msg.message_id)
+            except telebot.apihelper.ApiTelegramException:
+                pass
+            bot.send_message(
+                msg.chat.id, cart_text, parse_mode="MarkdownV2", reply_markup=keyboard
+            )
 
 
 @bot.callback_query_handler(lambda data: data.data == "cart")
@@ -388,6 +413,7 @@ def edit_cart(data: types.CallbackQuery, answer=True):
                 callback_data=item.catalogue_item.id,
             )
         )
+        brand_name = item.catalogue_item.get_brand_name()
         for char in BANNED_CHARS:
             item.catalogue_item.name = item.catalogue_item.name.replace(
                 char, "\\" + char
@@ -395,9 +421,12 @@ def edit_cart(data: types.CallbackQuery, answer=True):
             item.catalogue_item.volume = item.catalogue_item.volume.replace(
                 char, "\\" + char
             )
+            brand_name = brand_name.replace(
+                    char, "\\" + char
+                )
         cart_text.append(
             ITEM_CART_MESSAGE.format(
-                number=index+1,
+                number=index + 1,
                 name=item.catalogue_item.name,
                 size=item.catalogue_item.volume
                 if item.catalogue_item.volume != "Безразмерный"
@@ -405,6 +434,7 @@ def edit_cart(data: types.CallbackQuery, answer=True):
                 price=item.catalogue_item.price,
                 quantity=item.quantity,
                 sum=item.sum,
+                brand=brand_name
             )
         )
         sum_ += item.sum
@@ -472,7 +502,7 @@ def remove_from_cart(data: types.CallbackQuery):
 @bot.callback_query_handler(lambda data: data.data.split("&")[0] == "add_to_cart")
 def add_to_cart(data: types.CallbackQuery):
     logging.info(f"{data.message.chat.id} came with {data.data}")
-    direct_data, from_data = data.data.split(";")
+    direct_data, from_data = data.data.split("*")
     product = direct_data.split("&")[1]
     if api.add_to_cart(product_id=product, chat_id=data.message.chat.id):
         product = api.get_products(id=int(product))[0]
@@ -494,7 +524,7 @@ def add_to_cart(data: types.CallbackQuery):
 @bot.callback_query_handler(lambda data: data.data.split("&")[0] == "edit")
 def edit_product_cart(data: types.CallbackQuery):
     logger.info(f"{data.message.chat.id} came with {data.data}")
-    direct_data, from_data = data.data.split(";")
+    direct_data, from_data = data.data.split("*")
     direct_data = direct_data.split("&")
     cart_id = int(direct_data[1])
     catalogue_id = int(direct_data[2])
@@ -542,7 +572,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
     edit = isinstance(data, types.CallbackQuery)
     logger.info(f"{message.chat.id} came")
     user = api.get_user(message.chat.id)
-    if user is None:
+    if not user:
         if isinstance(data, types.CallbackQuery):
             bot.answer_callback_query(data.id, UNREGISTERED_BUTTON_ANSWER)
         return register(message)
@@ -563,6 +593,7 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
             message.chat.id, "", 0, user.address, models.Status.IN_CART, user.comment
         )
         for index, item in enumerate(cart_list):
+            brand_name = item.catalogue_item.get_brand_name()
             for char in BANNED_CHARS:
                 item.catalogue_item.name = item.catalogue_item.name.replace(
                     char, "\\" + char
@@ -570,26 +601,56 @@ def checkout(data: typing.Union[types.CallbackQuery, types.Message]):
                 item.catalogue_item.volume = item.catalogue_item.volume.replace(
                     char, "\\" + char
                 )
-            order.cart += f"{index + 1}\\) _{item.catalogue_item.name}_ {'__' + item.catalogue_item.volume + '__' if item.catalogue_item.volume != 'Безразмерный' else ''} {item.quantity}шт⋅{item.catalogue_item.price}₽ \\= *{item.sum}₽*\n "
-            order.sum += item.sum
-            message_text.append(
-                    ITEM_CART_MESSAGE.format(
-                        number=index+1,
-                        name=item.catalogue_item.name,
-                        size=item.catalogue_item.volume
-                        if item.catalogue_item.volume != "Безразмерный"
-                        else " ",
-                        price=item.catalogue_item.price,
-                        quantity=item.quantity,
-                        sum=item.sum,
-                    )
+                brand_name = brand_name.replace(
+                    char, "\\" + char
                 )
+            message_text.append(
+                ITEM_CART_MESSAGE.format(
+                    number=index + 1,
+                    name=item.catalogue_item.name,
+                    size=item.catalogue_item.volume
+                    if item.catalogue_item.volume != "Безразмерный"
+                    else " ",
+                    price=item.catalogue_item.price,
+                    quantity=item.quantity,
+                    sum=item.sum,
+                    brand=brand_name
+                )
+            )
+            order.cart += ITEM_CART_MESSAGE.format(
+                number=index + 1,
+                name=item.catalogue_item.name,
+                size=item.catalogue_item.volume
+                if item.catalogue_item.volume != "Безразмерный"
+                else " ",
+                price=item.catalogue_item.price,
+                quantity=item.quantity,
+                sum=item.sum,
+                brand=brand_name
+            ) + '\n'
+            order.sum += item.sum
+
+        if order.sum < MIN_ORDER_SUM:
+            bot.send_message(
+                data.message.chat.id,
+                f"До минимальной суммы заказа не хватает {MIN_ORDER_SUM - order.sum}₽",
+            )
+            menu(data.message)
+            return
         if order.sum < FREE_DELIVERY_FROM:
             order.sum += DELIVERY_COST
             order.free_delivery = False
-            message_text.append(f"\nДоставка: {DELIVERY_COST}₽")
-        message_text='\n'.join(message_text)
-        message_text += END_CART_MESSAGE.format(sum=order.sum)
+            order.cart += f"\nДоставка\\: *{DELIVERY_COST}*₽\n"
+            message_text.append(f"\nДоставка\\: *{DELIVERY_COST}*₽\n")
+
+        message_text = "\n".join(message_text)
+        message_text += '\n' + END_CART_MESSAGE.format(sum=order.sum)
+        if order.sum < FREE_DELIVERY_FROM:
+            message_text += (
+                f"\n\n*Ещё {FREE_DELIVERY_FROM - order.sum + DELIVERY_COST}₽ и доставка будет бесплатной*"
+            )
+        else:
+            message_text += "\nПоздравляем, вам доставка бесплатна\\!"
         order = api.create_order(order)
         for char in BANNED_CHARS:
             user.address.replace(char, "\\" + char)
@@ -658,23 +719,19 @@ def edit_user(data: types.CallbackQuery):
 
 def register(message: types.Message):
     try:
-        bot.edit_message_text(
-           UNREGISTERED_MESSAGE , message.chat.id, message.message_id
-        )
+        bot.edit_message_text(UNREGISTERED_MESSAGE, message.chat.id, message.message_id)
     except telebot.apihelper.ApiTelegramException:
         pass
     begin_phone_number(message, True)
 
 
 def begin_phone_number(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     keyboard = types.ReplyKeyboardMarkup()
-    keyboard.add(
-        types.KeyboardButton(REGISTRATION_PHONE_BUTTON, request_contact=True)
-    )
+    keyboard.add(types.KeyboardButton(REGISTRATION_PHONE_BUTTON, request_contact=True))
     bot.send_message(msg.chat.id, REGISTRATION_PHONE_MESSAGE, reply_markup=keyboard)
     bot.register_next_step_handler_by_chat_id(
         msg.chat.id,
@@ -683,14 +740,14 @@ def begin_phone_number(
 
 
 def phone_number_enter(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[
-        [
-            types.Message,
-        ],
-        typing.Any,
-    ] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[
+            [
+                types.Message,
+            ],
+            typing.Any,
+        ] = None,
 ):
     logger.info(f"{msg.chat.id} came")
     try:
@@ -713,15 +770,17 @@ def phone_number_enter(
 
 
 def begin_address(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     user = api.get_user(msg.chat.id)
     user.address = ""
     assert api.create_user(user) == user
     bot.send_message(
-        msg.chat.id, REGISTRATION_STREET_MESSAGE, reply_markup=types.ReplyKeyboardRemove()
+        msg.chat.id,
+        REGISTRATION_STREET_MESSAGE,
+        reply_markup=types.ReplyKeyboardRemove(),
     )
     bot.register_next_step_handler(
         msg, lambda message: street_enter(message, registration, on_complete)
@@ -729,9 +788,9 @@ def begin_address(
 
 
 def street_enter(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
@@ -744,9 +803,9 @@ def street_enter(
 
 
 def house_enter(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
@@ -759,9 +818,9 @@ def house_enter(
 
 
 def entrance_enter(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
@@ -774,24 +833,24 @@ def entrance_enter(
 
 
 def floor_enter(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
     user.address += f"\nЭтаж: {msg.text}"
     assert api.create_user(user) == user
-    bot.send_message(msg.chat.id, REGISTRATION_FLOOR_MESSAGE)
+    bot.send_message(msg.chat.id, REGISTRATION_APARTMENT_MESSAGE)
     bot.register_next_step_handler(
         msg, lambda message: apartment_enter(message, registration, on_complete)
     )
 
 
 def apartment_enter(
-    msg: types.Message,
-    registration: bool,
-    on_complete: typing.Callable[[types.Message], typing.Any] = None,
+        msg: types.Message,
+        registration: bool,
+        on_complete: typing.Callable[[types.Message], typing.Any] = None,
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
@@ -804,7 +863,7 @@ def apartment_enter(
 
 
 def begin_comment(
-    msg: types.Message, on_complete: typing.Callable[[types.Message], typing.Any] = None
+        msg: types.Message, on_complete: typing.Callable[[types.Message], typing.Any] = None
 ):
     logger.info(f"{msg.chat.id} came")
     bot.send_message(msg.chat.id, REGISTRATION_COMMENT_MESSAGE)
@@ -814,7 +873,7 @@ def begin_comment(
 
 
 def comment_enter(
-    msg: types.Message, on_complete: typing.Callable[[types.Message], typing.Any] = None
+        msg: types.Message, on_complete: typing.Callable[[types.Message], typing.Any] = None
 ):
     logger.info(f"{msg.chat.id} came")
     user = api.get_user(msg.chat.id)
@@ -834,11 +893,24 @@ def pay(data: types.CallbackQuery):
     order = api.get_order(order_id)
     if method == "cash":
         order.status = models.Status.CASH
-        tools.order_paid(order.id)
+        tools.order_paid(
+            order.id, chat_id=data.message.chat.id, notify=NOTIFICATION_CHATS, username=data.from_user.username
+        )
         bot.answer_callback_query(data.id, ORDER_COMPLETE_BUTTON_ANSWER)
         bot.edit_message_text(
             ORDER_COMPLETE_MESSAGE, data.message.chat.id, data.message.message_id
         )
+    if method == "card":
+        api.change_status(order_id, models.Status.WAITING_FOR_PAYMENT)
+        url=tools.get_payment_link(data.from_user, order)
+        bot.edit_message_text(ORDER_PAY_WITH_CARD, data.message.chat.id,data.message.message_id,reply_markup=quick_markup({"Оплатить":{"url":url}},1))
+        bot.answer_callback_query(data.id, ORDER_PAY_WITH_CARD)
+
+    api.clear_cart(data.message.chat.id)
+    def menu_after_2_sec():
+        time.sleep(3)
+        menu(data.message)
+    threading.Thread(target=menu_after_2_sec).start()
 
 
 @bot.callback_query_handler(lambda x: True)
@@ -850,4 +922,5 @@ def default_answer(data: types.CallbackQuery):
 
 
 if __name__ == "__main__":
-    bot.polling(non_stop=True)
+    print(f"Running bot name {bot.get_me().username}")
+    bot.polling()

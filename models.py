@@ -40,7 +40,11 @@ class Product:
 
     def get_photo(self) -> typing.BinaryIO:
         if self.photo_url:
-            photo = api.get_photo(self.photo_url)
+            try:
+                photo = api.get_photo(self.photo_url)
+            except Exception as exc:
+                logger.error("Unable to get photo", exc)
+                photo = open("no_image.jpg", "rb")
         else:
             photo = open("no_image.jpg", "rb")
         return photo
@@ -77,7 +81,7 @@ class User:
     comment: str
 
     def __setattr__(self, name, value):
-        logger.info(f"{name=} {value=}")
+        logger.debug(f"{name=} {value=}")
         if name == "phone_number":
             super().__setattr__(name, self.__validate_phone(value))
         else:
@@ -90,7 +94,7 @@ class User:
                 raise ValueError("Поддерживаются только номера из России")
 
         elif not number.isdigit():
-            raise ValueError("Неправильный формат номера")
+            raise ValueError(f"Неправильный формат номера ({number})")
         else:
             if number[0] == "8":
                 number = "+7" + number[1:]
@@ -115,3 +119,16 @@ class Order:
     comment: str
     id: int = None
     free_delivery: bool = True
+
+    @classmethod
+    def from_json(cls, js):
+        return cls(
+            client=js.get('client_id') or js.get('client'),
+            cart=js['cart'],
+            sum=js['sum'],
+            address=js['address'],
+            status=Status[js['status']],
+            comment=js['comment'],
+            id=js['id'],
+            free_delivery=js['free_delivery'],
+        )

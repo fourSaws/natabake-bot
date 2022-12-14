@@ -1,1 +1,7 @@
 /secure.py
+/.env
+.idea
+__pycache__
+bot-from-*
+chats.txt
+start.sh
