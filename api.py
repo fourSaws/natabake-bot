@@ -174,16 +174,17 @@ def get_user(chat_id: int) -> User | bool:
 
 
 def create_order(order: Order) -> Order:
-    requests.get(server_url+'/api/createOrder',params={
+    data=requests.get(server_url+'/api/createOrder',params={
         "chat_id":order.client,
         "cart":order.cart,
         "free_delivery":order.free_delivery,
         "sum":order.sum,
         "address":order.address,
-        "status":order.status,
+        "status":order.status.name,
         "comment":order.comment,
     })
-    return order
+
+    return Order.from_json(data.json())
 
 
 def change_status(order_id: int, status: Status) -> bool:

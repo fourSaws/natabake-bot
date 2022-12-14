@@ -901,12 +901,12 @@ def pay(data: types.CallbackQuery):
             ORDER_COMPLETE_MESSAGE, data.message.chat.id, data.message.message_id
         )
     if method == "card":
-        order.status=models.Status.WAITING_FOR_PAYMENT
+        api.change_status(order_id, models.Status.WAITING_FOR_PAYMENT)
         url=tools.get_payment_link(data.message, order)
         bot.edit_message_text(ORDER_PAY_WITH_CARD, data.message.chat.id,data.message.message_id,reply_markup=quick_markup({"Оплатить":{"url":url}},1))
         bot.answer_callback_query(data.id, ORDER_PAY_WITH_CARD)
 
-    api.clear_cart(order.client)
+    api.clear_cart(data.message.chat.id)
     def menu_after_2_sec():
         time.sleep(3)
         menu(data.message)

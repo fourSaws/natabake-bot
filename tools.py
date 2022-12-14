@@ -183,7 +183,7 @@ def get_payment_link(msg: telebot.types.Message, order: models.Order):
     bill_data = {
         "amount": {
             "currency": "RUB",
-            "value": f"{order.sum}.00"
+            "value": f"{order.sum:.2f}"
         },
         "comment": f"Заказ №{order.id}",
         "expirationDateTime": (datetime.datetime.now()+datetime.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S+03:00"),
@@ -198,5 +198,7 @@ def get_payment_link(msg: telebot.types.Message, order: models.Order):
     headers={'content-type': 'application/json','accept': 'application/json','Authorization': f'Bearer {environ.get("qiwi_secret")}'}
     response=requests.put(f'https://api.qiwi.com/partner/bill/v1/bills/{order.id}', headers=headers,json=bill_data)
     if response.status_code!=200:
+        logger.info(f'{bill_data=}')
+        logger.error(f'Incorrect response from qiwi {response.status_code} {response.content.decode()}')
         raise Exception("Incorrect response")
     return response.json()['payUrl']

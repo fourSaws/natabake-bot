@@ -94,7 +94,7 @@ class User:
                 raise ValueError("Поддерживаются только номера из России")
 
         elif not number.isdigit():
-            raise ValueError("Неправильный формат номера")
+            raise ValueError(f"Неправильный формат номера ({number})")
         else:
             if number[0] == "8":
                 number = "+7" + number[1:]
@@ -123,7 +123,7 @@ class Order:
     @classmethod
     def from_json(cls, js):
         return cls(
-            client=js['client_id'],
+            client=js.get('client_id') or js.get('client'),
             cart=js['cart'],
             sum=js['sum'],
             address=js['address'],
