@@ -127,7 +127,7 @@ class Order:
             cart=js['cart'],
             sum=js['sum'],
             address=js['address'],
-            status=js['status'],
+            status=Status[js['status']],
             comment=js['comment'],
             id=js['id'],
             free_delivery=js['free_delivery'],
